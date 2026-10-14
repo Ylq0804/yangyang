@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FFF6D9">
+<title>杨杨工作台</title>
+<style>
+/* ========== 主题变量：浅黄 + 黑色（默认浅色），支持深色模式 ========== */
+:root{
+  --bg:#FFF6DA; --card:#FFFEF7; --field:#FFFFFF;
+  --text:#3B3225; --sub:#A2937A; --line:#F5E7BC;
+  --accent:#FFD93D; --accent2:#FFB7C5; --accent3:#A8E6CF;
+  --primary:#3B3225; --primary-text:#FFF9E8;
+  --danger:#FF8B8B; --ok:#5CC98E;
+  --hero1:#FFE9A8; --hero2:#FFD3DC;
+  --shadow:0 8px 20px rgba(190,150,40,.12); --r:20px;
+}
+html[data-theme="dark"]{
+  --bg:#1D1913; --card:#2A251C; --field:#332D22;
+  --text:#F6EEDC; --sub:#A79B80; --line:#453D2C;
+  --accent:#FFD93D; --accent2:#FF9FB2; --accent3:#7BD3B0;
+  --primary:#FFD93D; --primary-text:#3B3225;
+  --danger:#FF8B8B; --ok:#5CC98E;
+  --hero1:#4A3E1C; --hero2:#4A2C33;
+  --shadow:0 8px 20px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;
+  /* 可爱波点背景 */
+  background-image:radial-gradient(rgba(255,190,60,.13) 1.5px,transparent 1.5px);
+  background-size:26px 26px;
+}
+html[data-theme="dark"] body{
+  background-image:radial-gradient(rgba(255,217,61,.06) 1.5px,transparent 1.5px);
+}
+/* ========== 顶栏 ========== */
+.topbar{
+  position:fixed;top:0;left:0;right:0;height:54px;z-index:30;
+  display:flex;align-items:center;gap:10px;padding:0 12px;
+  padding-top:env(safe-area-inset-top);
+  background:var(--card);border-bottom:1px solid var(--line);
+}
+.topbar .title{font-size:17px;font-weight:700;flex:1}
+.icon-btn{
+  width:42px;height:42px;border:none;border-radius:50%;font-size:19px;cursor:pointer;
+  background:var(--field);color:var(--text);border:2px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+}
+/* ========== 侧边抽屉导航 ========== */
+.drawer{
+  position:fixed;top:0;left:0;bottom:0;width:232px;z-index:40;
+  background:var(--card);border-right:1px solid var(--line);
+  transform:translateX(-105%);transition:transform .25s ease;
+  padding:16px 10px;overflow-y:auto;
+}
+.drawer.open{transform:none;box-shadow:8px 0 30px rgba(0,0,0,.15)}
+.drawer .brand{font-size:17px;font-weight:800;padding:6px 12px 14px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;margin-bottom:2px;
+  border-radius:12px;font-size:15px;cursor:pointer;color:var(--text);user-select:none;
+  min-height:46px;
+}
+.nav-item:active{background:var(--bg)}
+.nav-item.on{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#3B3225;font-weight:700}
+.drawer .foot{margin-top:16px;padding:0 12px;font-size:12px;color:var(--sub)}
+.mask{
+  position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:35;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.mask.show{opacity:1;pointer-events:auto}
+/* 桌面端：侧边栏常驻 */
+@media(min-width:900px){
+  .drawer{transform:none}
+  .mask{display:none}
+  #btnMenu{display:none}
+  .topbar{left:232px}
+  main{margin-left:232px;max-width:860px}
+}
+/* ========== 主区域 ========== */
+main{padding:66px 12px calc(24px + env(safe-area-inset-bottom));max-width:760px;margin:0 auto}
+.page{display:none}
+.page.active{display:block}
+.page h2{font-size:18px;margin:4px 2px 12px}
+.card{
+  background:var(--card);border:2px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:14px;margin-bottom:14px;
+}
+.card h3{font-size:15px;margin-bottom:4px}
+/* ========== 表单控件（触控友好，最小高度44px） ========== */
+input,select,textarea{
+  width:100%;min-height:44px;padding:8px 10px;font-size:15px;font-family:inherit;
+  color:var(--text);background:var(--field);border:1px solid var(--line);border-radius:10px;
+  outline:none;
+}
+textarea{min-height:74px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.card>input,.card>select,.card>textarea,.card>.row,.card>.btn,.card>canvas,.card>.pal,.card>.stats-line{margin-top:8px}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1;margin-top:0!important}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;padding:0 18px;border:none;border-radius:999px;cursor:pointer;
+  background:var(--primary);color:var(--primary-text);font-size:15px;font-weight:600;
+  transition:transform .12s;
+}
+.btn:active{transform:scale(.95)}
+.btn.ghost{background:transparent;border:2px solid var(--line);color:var(--text);font-weight:400}
+.btn.danger{background:var(--danger);color:#fff}
+.btn.small{min-height:34px;padding:0 12px;font-size:13px;flex:0 0 auto}
+.mt{margin-top:8px}
+.muted{color:var(--sub);font-size:13px}
+.center{text-align:center;padding:14px 0}
+.pre{white-space:pre-wrap;word-break:break-word}
+/* ========== 统计卡片 ========== */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:12px 6px;text-align:center;
+}
+.stat-t{font-size:12px;color:var(--sub)}
+.stat-v{font-size:17px;font-weight:800;margin-top:4px}
+/* ========== 列表 ========== */
+.li{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px dashed var(--line)}
+.li:last-child{border-bottom:none}
+.li-m{flex:1;min-width:0}
+.chip{display:inline-block;padding:2px 8px;border-radius:8px;font-size:12px;font-weight:700;flex:0 0 auto}
+canvas.chart{width:100%;display:block}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+/* ========== 日历 ========== */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .wk{text-align:center;font-size:12px;color:var(--sub);padding:4px 0}
+.cell{
+  position:relative;min-height:58px;border-radius:10px;background:var(--field);
+  border:1px solid var(--line);padding:3px;font-size:13px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;
+}
+.cell.out{background:transparent;border-color:transparent;cursor:default}
+.cell.today{box-shadow:inset 0 0 0 2px var(--primary);font-weight:800}
+.cell.pd{background:#FFD3DC;color:#5B3A44}
+.cell.ft{background:#E2D4F7;color:#4A3A5B}
+.cell.pd.ft{background:linear-gradient(135deg,#FFD3DC 50%,#E2D4F7 50%)}
+/* 日历格子内直接展示待办文字 */
+.ttodos{display:flex;flex-direction:column;gap:2px;width:100%}
+.ttext{
+  font-size:10px;line-height:1.3;padding:1px 4px;border-radius:5px;
+  background:var(--accent);color:#3B3225;text-align:left;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ttext.done{background:var(--line);color:var(--sub);text-decoration:line-through}
+.more{font-size:10px;color:var(--sub);text-align:center}
+/* ========== 拼豆图纸：文件夹页签 + 缩略图网格 ========== */
+.ftab{
+  display:inline-block;padding:7px 14px;margin:0 6px 6px 0;border-radius:999px;
+  background:var(--field);border:2px solid var(--line);font-size:13px;cursor:pointer;user-select:none;
+}
+.ftab.on{background:linear-gradient(120deg,var(--accent),var(--accent2));border-color:transparent;color:#3B3225;font-weight:700}
+#pf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.pcell{cursor:pointer;text-align:center;min-width:0}
+.pcell img{
+  width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;display:block;
+  border:2px solid var(--line);image-rendering:pixelated;background:#fff;
+}
+.pcell:active img{transform:scale(.96)}
+.pcell .pname{font-size:13px;font-weight:600;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ========== 心情选择 ========== */
+.moods{display:flex;gap:6px;flex-wrap:wrap}
+.mood{font-size:24px;padding:6px 10px;border-radius:12px;border:2px solid transparent;cursor:pointer;background:var(--field)}
+.mood.on{border-color:var(--accent);background:rgba(255,217,61,.18)}
+/* ========== 进度条 ========== */
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;background:var(--ok);border-radius:6px;transition:width .3s}
+.sub{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed var(--line)}
+.sub input[type=checkbox]{width:20px;height:20px;min-height:20px;flex:0 0 auto;accent-color:var(--ok)}
+.sub .t{flex:1;min-width:0}
+.done{text-decoration:line-through;color:var(--sub)}
+/* ========== 弹层（手机底部弹出，桌面居中） ========== */
+#modalMask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60;display:none}
+#modal{
+  position:fixed;left:0;right:0;bottom:0;max-height:82vh;overflow-y:auto;z-index:61;display:none;
+  background:var(--card);border-radius:18px 18px 0 0;padding:16px;
+  padding-bottom:calc(16px + env(safe-area-inset-bottom));
+}
+@media(min-width:900px){
+  #modal{left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-50%);width:440px;border-radius:18px}
+}
+.m-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+/* ========== 首页：时钟 / 每日一句 / 打卡 ========== */
+.hero{
+  background:linear-gradient(120deg,var(--hero1),var(--hero2));
+  border:none;text-align:center;padding:22px 14px;
+}
+.hm-greet{font-size:15px;font-weight:700}
+.hm-time{
+  font-size:46px;font-weight:800;letter-spacing:3px;margin-top:6px;
+  font-variant-numeric:tabular-nums;
+}
+.hm-date{font-size:13px;opacity:.78;margin-top:4px}
+.quote .q-mark{font-size:22px}
+.q-cn{font-size:17px;font-weight:700;margin-top:2px;line-height:1.5}
+.q-en{font-size:13px;color:var(--sub);margin-top:6px;font-style:italic}
+.ck-dot{
+  width:42px;height:42px;border-radius:50%;border:2px solid var(--line);
+  background:var(--field);font-size:19px;color:#3B3225;flex:0 0 auto;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:transform .12s;
+}
+.ck-dot:active{transform:scale(.88)}
+.ck-dot.on{background:var(--accent);border-color:var(--accent);animation:pop .3s}
+@keyframes pop{50%{transform:scale(1.25)}}
+/* ========== Toast 提示 ========== */
+#toast{
+  position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(16px);
+  background:#222;color:#fff;padding:10px 20px;border-radius:22px;font-size:14px;
+  opacity:0;transition:.25s;z-index:99;pointer-events:none;max-width:86vw;text-align:center;
+}
+#toast.show{opacity:.95;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+
+<!-- 顶栏：汉堡按钮 + 标题 + 深色模式开关 -->
+<header class="topbar">
+  <button class="icon-btn" id="btnMenu" aria-label="菜单">☰</button>
+  <div class="title">杨杨工作台</div>
+  <button class="icon-btn" id="btnTheme" aria-label="切换深色模式">🌙</button>
+</header>
+
+<!-- 遮罩（手机端点击关闭抽屉） -->
+<div class="mask" id="mask"></div>
+
+<!-- 侧边抽屉导航：10个功能入口 -->
+<aside class="drawer" id="drawer">
+  <div class="brand">🌼 杨杨工作台</div>
+  <nav id="navList"></nav>
+  <div class="foot">数据仅保存在本机浏览器 localStorage，清除缓存会丢失数据。</div>
+</aside>
+
+<main>
+  <!-- ========== 0. 首页：时钟 + 每日一句 + 打卡 ========== -->
+  <section class="page" id="page-home">
+    <div class="card hero">
+      <div class="hm-greet" id="hm-greet"></div>
+      <div class="hm-time" id="hm-time"></div>
+      <div class="hm-date" id="hm-date"></div>
+    </div>
+    <div class="card quote">
+      <h3>🌱 每日一句</h3>
+      <div class="q-cn"><span class="q-mark">❝</span> <span id="hm-quote-cn"></span></div>
+      <div class="q-en" id="hm-quote-en"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="margin-top:0">
+        <h3 style="flex:1;margin:0">✅ 每日打卡</h3>
+        <span class="muted" id="ck-progress"></span>
+      </div>
+      <div id="ck-list" class="mt"></div>
+      <div class="row mt">
+        <input id="ck-name" placeholder="新增打卡项目，如：🧘 瑜伽">
+        <button class="btn small" id="ck-add" style="flex:0 0 auto">添加</button>
+      </div>
+      <div class="muted mt">打卡每天 0 点自动重置，连续 / 累计天数会持续累积保存在本地。</div>
+    </div>
+  </section>
+
+  <!-- ========== 1. 账本 ========== -->
+  <section class="page" id="page-ledger">
+    <h2>📒 账本</h2>
+    <div class="card">
+      <h3>记一笔</h3>
+      <div class="row">
+        <select id="lg-type"><option value="out">支出</option><option value="in">收入</option></select>
+        <input id="lg-amount" type="number" min="0" step="0.01" placeholder="金额">
+      </div>
+      <div class="row">
+        <select id="lg-cat">
+          <option>餐饮</option><option>交通</option><option>购物</option>
+          <option>房租</option><option>工资</option><option>其他</option>
+        </select>
+        <input id="lg-date" type="date">
+      </div>
+      <input id="lg-note" placeholder="备注（可选）">
+      <button class="btn" id="lg-add">保存</button>
+    </div>
+    <div class="stats" id="lg-stats"></div>
+    <div class="card">
+      <h3>本月支出分类</h3>
+      <canvas class="chart" id="lg-pie"></canvas>
+      <div id="lg-legend" class="mt"></div>
+    </div>
+    <div class="card">
+      <h3>最近记录</h3>
+      <div id="lg-list"></div>
+    </div>
+  </section>
+
+  <!-- ========== 2. 体重 ========== -->
+  <section class="page" id="page-weight">
+    <h2>⚖️ 体重</h2>
+    <div class="card">
+      <h3>今日录入</h3>
+      <div class="row">
+        <input id="wt-num" type="number" min="0" step="0.1" placeholder="体重 kg">
+        <input id="wt-date" type="date">
+      </div>
+      <button class="btn" id="wt-add">保存</button>
+      <div class="row mt">
+        <input id="wt-target" type="number" min="0" step="0.1" placeholder="目标体重 kg">
+        <button class="btn ghost" id="wt-set-target" style="flex:0 0 auto">设置目标</button>
+      </div>
+    </div>
+    <div class="stats" id="wt-stats"></div>
+    <div class="card">
+      <h3>近30天趋势</h3>
+      <canvas class="chart" id="wt-chart"></canvas>
+    </div>
+    <div class="card">
+      <h3>最近记录</h3>
+      <div id="wt-list"></div>
+    </div>
+  </section>
+
+  <!-- ========== 3. 文案 ========== -->
+  <section class="page" id="page-copy">
+    <h2>📝 文案</h2>
+    <div class="card">
+      <h3 id="cp-form-title">新增文案</h3>
+      <input id="cp-cat" list="cp-cats" placeholder="分类，如：励志 / 生活 / 工作">
+      <datalist id="cp-cats"></datalist>
+      <textarea id="cp-text" placeholder="文案内容"></textarea>
+      <div class="row">
+        <button class="btn" id="cp-add">保存</button>
+        <button class="btn ghost" id="cp-cancel" style="display:none;flex:0 0 auto">取消编辑</button>
+      </div>
+    </div>
+    <div class="card">
+      <input id="cp-search" placeholder="🔍 搜索关键词">
+      <div id="cp-list" class="mt"></div>
+    </div>
+  </section>
+
+  <!-- ========== 4. 加班时长 ========== -->
+  <section class="page" id="page-ot">
+    <h2>⏰ 加班时长</h2>
+    <div class="card">
+      <h3>录入加班</h3>
+      <input id="ot-date" type="date">
+      <div class="row">
+        <input id="ot-start" type="time">
+        <input id="ot-end" type="time">
+      </div>
+      <button class="btn" id="ot-add">保存</button>
+    </div>
+    <div class="stats" id="ot-stats"></div>
+    <div class="card">
+      <h3>历史记录</h3>
+      <div id="ot-list"></div>
+    </div>
+  </section>
+
+  <!-- ========== 5. 拼豆图纸（成品图纸 + 文件夹分类） ========== -->
+  <section class="page" id="page-pixel">
+    <h2>🎨 拼豆图纸</h2>
+    <div class="card">
+      <h3>上传成品图纸</h3>
+      <div class="row">
+        <select id="pf-target"></select>
+        <input id="px-name" placeholder="图纸名称（可选）">
+      </div>
+      <div class="row">
+        <input id="pf-new-folder" placeholder="新建文件夹名称">
+        <button class="btn ghost" id="pf-add-folder" style="flex:0 0 auto">创建</button>
+      </div>
+      <button class="btn" id="px-upload-btn">📷 从相册上传</button>
+      <input type="file" id="px-file" accept="image/*" hidden>
+      <div class="muted mt">图纸会保存到所选文件夹中，仅存储在本机浏览器。</div>
+    </div>
+    <div class="card">
+      <div class="row" style="margin-top:0">
+        <h3 style="flex:1;margin:0">图纸库</h3>
+        <button class="btn small ghost" id="pf-del-folder" style="display:none">删除当前文件夹</button>
+      </div>
+      <div id="pf-tabs" class="mt"></div>
+      <div id="pf-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== 6. 心情日记 ========== -->
+  <section class="page" id="page-mood">
+    <h2>😊 心情日记</h2>
+    <div class="card">
+      <h3>今天的心情</h3>
+      <div class="moods" id="md-moods"></div>
+      <input id="md-date" type="date">
+      <textarea id="md-text" placeholder="记录今天发生了什么…"></textarea>
+      <button class="btn" id="md-add">保存</button>
+    </div>
+    <div class="card">
+      <h3>日记列表</h3>
+      <div id="md-list"></div>
+    </div>
+  </section>
+
+  <!-- ========== 7. 日历待办 ========== -->
+  <section class="page" id="page-cal">
+    <h2>📅 日历待办</h2>
+    <div class="card">
+      <div class="row" style="margin-top:0">
+        <button class="btn ghost small" id="cal-prev">‹ 上月</button>
+        <b id="cal-title" style="text-align:center"></b>
+        <button class="btn ghost small" id="cal-next">下月 ›</button>
+      </div>
+      <button class="btn ghost mt" id="cal-today">回到今天</button>
+      <div class="cal mt" id="cal-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== 8. 目标清单 ========== -->
+  <section class="page" id="page-goal">
+    <h2>🎯 目标清单</h2>
+    <div class="card">
+      <h3 id="gl-form-title">新建目标</h3>
+      <input id="gl-title" placeholder="目标内容">
+      <input id="gl-deadline" type="date">
+      <div class="row">
+        <button class="btn" id="gl-add">保存目标</button>
+        <button class="btn ghost" id="gl-cancel" style="display:none;flex:0 0 auto">取消编辑</button>
+      </div>
+    </div>
+    <div id="gl-list"></div>
+    <div class="card">
+      <div class="row" style="margin-top:0;cursor:pointer" id="gl-arch-toggle">
+        <h3 style="flex:1;margin:0">已归档</h3>
+        <span id="gl-arch-arrow">▼</span>
+      </div>
+      <div id="gl-arch-list" class="mt" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- ========== 9. 经期记录 ========== -->
+  <section class="page" id="page-period">
+    <h2>🌸 经期记录</h2>
+    <div class="card">
+      <h3>记录经期开始</h3>
+      <div class="row">
+        <input id="pd-date" type="date">
+        <button class="btn" id="pd-add" style="flex:0 0 auto">保存</button>
+      </div>
+      <div class="row">
+        <input id="pd-cycle" type="number" min="20" max="45" placeholder="周期天数（默认28）">
+        <input id="pd-len" type="number" min="2" max="10" placeholder="经期天数（默认5）">
+      </div>
+    </div>
+    <div class="stats" id="pd-stats"></div>
+    <div class="card">
+      <div class="row" style="margin-top:0">
+        <button class="btn ghost small" id="pd-prev">‹ 上月</button>
+        <b id="pd-cal-title" style="text-align:center"></b>
+        <button class="btn ghost small" id="pd-next">下月 ›</button>
+      </div>
+      <div class="cal mt" id="pd-cal"></div>
+      <div class="row mt" style="justify-content:center;gap:16px">
+        <span class="muted"><i class="legend-dot" style="display:inline-block;background:#FFD3DC"></i> 经期</span>
+        <span class="muted"><i class="legend-dot" style="display:inline-block;background:#E2D4F7"></i> 易孕期</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>历史记录</h3>
+      <div id="pd-list"></div>
+    </div>
+  </section>
+
+  <!-- ========== 10. 密码管理 ========== -->
+  <section class="page" id="page-pwd">
+    <h2>🔑 密码管理</h2>
+    <div class="card">
+      <h3>新增账号</h3>
+      <input id="pw-name" placeholder="名称，如：微博">
+      <input id="pw-account" placeholder="账号">
+      <input id="pw-pass" placeholder="密码">
+      <button class="btn" id="pw-add">保存</button>
+      <div class="muted mt">提示：数据仅保存在本机浏览器，请勿存储重要金融密码。</div>
+    </div>
+    <div class="card">
+      <input id="pw-search" placeholder="🔍 搜索名称或账号">
+      <div id="pw-list" class="mt"></div>
+    </div>
+  </section>
+</main>
+
+<!-- 通用弹层（日历待办使用） -->
+<div id="modalMask"></div>
+<div id="modal">
+  <div class="m-head"><b id="mTitle"></b><button class="btn small ghost" id="mClose">关闭</button></div>
+  <div id="mBody"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* =====================================================
+ * 通用工具
+ * ===================================================== */
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+/* localStorage 读写封装，统一 yy_ 前缀 */
+const DB={
+  get(k,d){try{const v=localStorage.getItem('yy_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem('yy_'+k,JSON.stringify(v))}catch(e){toast('存储失败，空间可能已满')}}
+};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const pad=n=>String(n).padStart(2,'0');
+const dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>dstr(new Date());
+const parseD=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)};
+const addDays=(s,n)=>{const d=parseD(s);d.setDate(d.getDate()+n);return dstr(d)};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cssVar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+/* Toast 轻提示 */
+let toastTimer;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1800)}
+/* 复制到剪贴板（含降级方案） */
+function copyText(txt,msg){
+  const done=()=>toast(msg||'已复制');
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(txt).then(done).catch(()=>fbCopy(txt,done))}
+  else fbCopy(txt,done);
+}
+function fbCopy(txt,done){
+  const ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='position:fixed;opacity:0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');done()}catch(e){toast('复制失败')}
+  ta.remove();
+}
+/* Canvas 高清适配（devicePixelRatio） */
+function fitCanvas(cv,h){
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth||cv.parentElement.clientWidth;
+  cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+'px';
+  const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+  return[ctx,w,h];
+}
+
+/* =====================================================
+ * 主题切换（深色模式，记忆选择）
+ * ===================================================== */
+function applyTheme(t){
+  document.documentElement.dataset.theme=t;
+  $('#btnTheme').textContent=t==='dark'?'☀️':'🌙';
+}
+function initTheme(){applyTheme(DB.get('theme','light'))}
+$('#btnTheme').onclick=()=>{
+  const t=document.documentElement.dataset.theme==='dark'?'light':'dark';
+  applyTheme(t);DB.set('theme',t);renderCurrent(); /* 重绘图表配色 */
+};
+
+/* =====================================================
+ * 抽屉导航 + 页面路由
+ * ===================================================== */
+const PAGES=[
+  ['home','🏠','首页'],
+  ['ledger','📒','账本'],['weight','⚖️','体重'],['copy','📝','文案'],['ot','⏰','加班时长'],
+  ['pixel','🎨','拼豆图纸'],['mood','😊','心情日记'],['cal','📅','日历待办'],['goal','🎯','目标清单'],
+  ['period','🌸','经期记录'],['pwd','🔑','密码管理']
+];
+let currentPage='home';
+const drawer=$('#drawer'),mask=$('#mask');
+function openDrawer(o){drawer.classList.toggle('open',o);mask.classList.toggle('show',o)}
+$('#btnMenu').onclick=()=>openDrawer(true);
+mask.onclick=()=>openDrawer(false);
+function buildNav(){
+  $('#navList').innerHTML=PAGES.map(p=>`<div class="nav-item" data-page="${p[0]}"><span>${p[1]}</span>${p[2]}</div>`).join('');
+  $('#navList').addEventListener('click',e=>{
+    const n=e.target.closest('.nav-item');if(n)go(n.dataset.page);
+  });
+}
+function go(p){
+  currentPage=p;
+  $$('.page').forEach(s=>s.classList.toggle('active',s.id==='page-'+p));
+  $$('.nav-item').forEach(n=>n.classList.toggle('on',n.dataset.page===p));
+  openDrawer(false);window.scrollTo(0,0);
+  RENDERS[p]&&RENDERS[p]();
+}
+function renderCurrent(){RENDERS[currentPage]&&RENDERS[currentPage]()}
+/* 触摸手势：左边缘右滑打开抽屉，抽屉上左滑关闭 */
+let _tx=0,_ty=0,_tInDrawer=false;
+document.addEventListener('touchstart',e=>{
+  _tx=e.touches[0].clientX;_ty=e.touches[0].clientY;_tInDrawer=drawer.contains(e.target);
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-_tx,dy=e.changedTouches[0].clientY-_ty;
+  if(Math.abs(dy)>60||Math.abs(dx)<50)return;
+  if(!_tInDrawer&&_tx<28&&dx>50)openDrawer(true);
+  else if(_tInDrawer&&dx<-50)openDrawer(false);
+},{passive:true});
+
+/* =====================================================
+ * 0. 首页：时钟 + 每日一句 + 每日打卡
+ * ===================================================== */
+/* 每日激励语库（中文 + 英文翻译），按“当年第几天”轮播，每天自动更新 */
+const QUOTES=[
+  ['把普通的日子过得浪漫一点。','Live your ordinary days romantically.'],
+  ['你笑起来真好看。','You look beautiful when you smile.'],
+  ['今天的你也要加油呀。','Keep going today, you\'ve got this.'],
+  ['慢一点没关系，只要在前进。','It\'s okay to be slow, as long as you\'re moving forward.'],
+  ['愿你被这个世界温柔以待。','May the world treat you gently.'],
+  ['生活明朗，万物可爱。','Life is bright and everything is lovely.'],
+  ['你值得世间所有美好。','You deserve all the good things in the world.'],
+  ['别怕路长梦远，总有星河照耀。','Fear not the long road; the galaxy always lights the way.'],
+  ['保持热爱，奔赴山海。','Keep your passion and head for the mountains and seas.'],
+  ['每一天都是限量版。','Every day is a limited edition.'],
+  ['做自己的小太阳，无需凭借谁的光。','Be your own little sun; you don\'t need anyone else\'s light.'],
+  ['温柔半两，从容一生。','A little gentleness brings a lifetime of ease.'],
+  ['花会沿路盛开，你以后的路也是。','Flowers bloom along the road, and so will your future.'],
+  ['心存希冀，目有繁星。','Hold hope in your heart and stars in your eyes.'],
+  ['好好生活，慢慢相遇。','Live well and meet slowly.'],
+  ['你只管努力，时间会给你答案。','Just work hard; time will give you the answer.'],
+  ['愿你眼里的星星，永远不会熄灭。','May the stars in your eyes never go out.'],
+  ['今天比昨天好，这就是希望。','Today is better than yesterday — that is hope.'],
+  ['知足且上进，温柔而坚定。','Be content yet driven, gentle yet firm.'],
+  ['星星发亮，是为了让每个人找到自己的星。','Stars shine so that everyone can find their own star.']
+];
+/* 打卡数据：items=[{id,name,days:[日期...]}]，每天是否打卡按日期记录，天然“每日重置” */
+let checkin=DB.get('checkin',null);
+if(!checkin){
+  checkin={items:[
+    {id:uid(),name:'🌅 早起',days:[]},
+    {id:uid(),name:'💧 喝八杯水',days:[]},
+    {id:uid(),name:'📖 学习半小时',days:[]}
+  ]};
+  DB.set('checkin',checkin);
+}
+/* 连续打卡天数（今天未打则算到昨天为止） */
+function streak(days){
+  let s=0,d=days.includes(today())?today():addDays(today(),-1);
+  while(days.includes(d)){s++;d=addDays(d,-1)}
+  return s;
+}
+let _lastDay=today();
+function startClock(){
+  const wk=['周日','周一','周二','周三','周四','周五','周六'];
+  const tick=()=>{
+    const n=new Date();
+    $('#hm-time').textContent=`${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+    $('#hm-date').textContent=`${n.getFullYear()}年${n.getMonth()+1}月${n.getDate()}日 · ${wk[n.getDay()]}`;
+    /* 跨天时自动刷新问候语、每日一句与打卡状态 */
+    if(today()!==_lastDay){_lastDay=today();refreshDaily();renderCheckin()}
+  };
+  tick();setInterval(tick,1000);
+}
+function refreshDaily(){
+  const h=new Date().getHours();
+  const greet=h<6?'夜深了':h<11?'早上好':h<14?'中午好':h<18?'下午好':'晚上好';
+  const emo=h<6?'🌙':h<11?'🌤️':h<14?'☀️':h<18?'🌤️':'🌙';
+  $('#hm-greet').textContent=`${greet}呀，杨杨 ${emo}`;
+  const doy=Math.floor((Date.now()-new Date(new Date().getFullYear(),0,0))/86400000);
+  const q=QUOTES[doy%QUOTES.length];
+  $('#hm-quote-cn').textContent=q[0];
+  $('#hm-quote-en').textContent=q[1];
+}
+function initHome(){
+  startClock();refreshDaily();
+  $('#ck-add').onclick=()=>{
+    const name=$('#ck-name').value.trim();
+    if(!name)return toast('请输入打卡项目名称');
+    checkin.items.push({id:uid(),name,days:[]});
+    DB.set('checkin',checkin);$('#ck-name').value='';renderCheckin();toast('已添加');
+  };
+  $('#ck-name').addEventListener('keydown',e=>{if(e.key==='Enter')$('#ck-add').click()});
+  $('#ck-list').addEventListener('click',e=>{
+    const dot=e.target.closest('[data-toggle]');
+    if(dot){
+      const it=checkin.items.find(x=>x.id===dot.dataset.toggle);if(!it)return;
+      const t=today(),i=it.days.indexOf(t);
+      if(i>=0)it.days.splice(i,1);else it.days.push(t); /* 当天再点一次可取消 */
+      DB.set('checkin',checkin);renderCheckin();return;
+    }
+    const b=e.target.closest('[data-del]');
+    if(b){
+      if(!confirm('删除这个打卡项目？'))return;
+      checkin.items=checkin.items.filter(x=>x.id!==b.dataset.del);
+      DB.set('checkin',checkin);renderCheckin();
+    }
+  });
+}
+function renderCheckin(){
+  const t=today();
+  const done=checkin.items.filter(i=>i.days.includes(t)).length;
+  $('#ck-progress').textContent=`今日 ${done}/${checkin.items.length}`;
+  $('#ck-list').innerHTML=checkin.items.map(i=>{
+    const on=i.days.includes(t);
+    return`<div class="li">
+      <div class="ck-dot${on?' on':''}" data-toggle="${i.id}">${on?'✓':''}</div>
+      <div class="li-m"><div>${esc(i.name)}</div>
+      <div class="muted">连续 ${streak(i.days)} 天 · 累计 ${i.days.length} 天</div></div>
+      <button class="btn small ghost" data-del="${i.id}">删</button>
+    </div>`;
+  }).join('')||'<div class="muted center">暂无打卡项目</div>';
+}
+
+/* =====================================================
+ * 1. 账本
+ * ===================================================== */
+const CATS=['餐饮','交通','购物','房租','工资','其他'];
+const CAT_COLOR={'餐饮':'#FF6B6B','交通':'#4ECDC4','购物':'#FFD93D','房租':'#6C5CE7','工资':'#2ECC71','其他':'#95A5A6'};
+let ledger=DB.get('ledger',[]);
+function initLedger(){
+  $('#lg-date').value=today();
+  $('#lg-add').onclick=()=>{
+    const type=$('#lg-type').value,amount=parseFloat($('#lg-amount').value);
+    const cat=$('#lg-cat').value,date=$('#lg-date').value||today(),note=$('#lg-note').value.trim();
+    if(!amount||amount<=0)return toast('请输入正确金额');
+    ledger.unshift({id:uid(),type,amount:Math.round(amount*100)/100,cat,date,note});
+    DB.set('ledger',ledger);
+    $('#lg-amount').value='';$('#lg-note').value='';
+    renderLedger();toast('已保存');
+  };
+  $('#lg-list').addEventListener('click',e=>{
+    const b=e.target.closest('[data-del]');if(!b)return;
+    if(!confirm('删除这条记录？'))return;
+    ledger=ledger.filter(r=>r.id!==b.dataset.del);DB.set('ledger',ledger);renderLedger();
+  });
+}
+function renderLedger(){
+  const ym=today().slice(0,7);
+  let inc=0,out=0;const byCat={};
+  ledger.filter(r=>r.date.startsWith(ym)).forEach(r=>{
+    if(r.type==='in')inc+=r.amount;else{out+=r.amount;byCat[r.cat]=(byCat[r.cat]||0)+r.amount}
+  });
+  $('#lg-stats').innerHTML=
+    `<div class="stat"><div class="stat-t">本月收入</div><div class="stat-v" style="color:#2ECC71">${inc.toFixed(2)}</div></div>
+     <div class="stat"><div class="stat-t">本月支出</div><div class="stat-v" style="color:#FF6B6B">${out.toFixed(2)}</div></div>
+     <div class="stat"><div class="stat-t">本月结余</div><div class="stat-v">${(inc-out).toFixed(2)}</div></div>`;
+  drawPie(byCat,out);
+  $('#lg-legend').innerHTML=Object.keys(byCat).length
+    ?Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>
+      `<div class="legend-row"><i class="legend-dot" style="background:${CAT_COLOR[c]}"></i>${c}<span class="muted" style="margin-left:auto">${v.toFixed(2)}（${out?Math.round(v/out*100):0}%）</span></div>`).join('')
+    :'';
+  const sorted=[...ledger].sort((a,b)=>b.date.localeCompare(a.date));
+  $('#lg-list').innerHTML=sorted.slice(0,50).map(r=>`
+    <div class="li">
+      <span class="chip" style="background:${CAT_COLOR[r.cat]}22;color:${CAT_COLOR[r.cat]}">${r.cat}</span>
+      <div class="li-m"><div class="pre">${esc(r.note)||r.cat}</div><div class="muted">${r.date}</div></div>
+      <b style="color:${r.type==='in'?'#2ECC71':'#FF6B6B'}">${r.type==='in'?'+':'-'}${r.amount.toFixed(2)}</b>
+      <button class="btn small ghost" data-del="${r.id}">删</button>
+    </div>`).join('')||'<div class="muted center">暂无记录</div>';
+}
+/* Canvas 分类饼图 */
+function drawPie(byCat,total){
+  const[ctx,W,H]=fitCanvas($('#lg-pie'),190);
+  const cx=W/2,cy=H/2,R=72,r=40;
+  ctx.clearRect(0,0,W,H);
+  const entries=Object.entries(byCat).filter(([,v])=>v>0);
+  if(!entries.length){
+    ctx.strokeStyle=cssVar('--line');ctx.setLineDash([4,4]);ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=cssVar('--sub');ctx.font='13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('本月暂无支出',cx,cy);return;
+  }
+  let a=-Math.PI/2;
+  entries.forEach(([c,v])=>{
+    const a2=a+v/total*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a,a2);ctx.closePath();
+    ctx.fillStyle=CAT_COLOR[c];ctx.fill();
+    ctx.strokeStyle=cssVar('--card');ctx.lineWidth=2;ctx.stroke();
+    a=a2;
+  });
+  /* 中心挖空成环形，显示总支出 */
+  ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fillStyle=cssVar('--card');ctx.fill();
+  ctx.fillStyle=cssVar('--sub');ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('总支出',cx,cy-10);
+  ctx.fillStyle=cssVar('--text');ctx.font='bold 14px sans-serif';
+  ctx.fillText('¥'+total.toFixed(0),cx,cy+8);
+}
+
+/* =====================================================
+ * 2. 体重
+ * ===================================================== */
+let weight=DB.get('weight',{list:[],target:null});
+function initWeight(){
+  $('#wt-date').value=today();
+  $('#wt-add').onclick=()=>{
+    const w=parseFloat($('#wt-num').value),date=$('#wt-date').value||today();
+    if(!w||w<=0)return toast('请输入正确体重');
+    const i=weight.list.findIndex(r=>r.date===date);
+    if(i>=0)weight.list[i].w=w;else weight.list.push({date,w});
+    weight.list.sort((a,b)=>a.date.localeCompare(b.date));
+    DB.set('weight',weight);$('#wt-num').value='';renderWeight();toast('已保存');
+  };
+  $('#wt-set-target').onclick=()=>{
+    const t=parseFloat($('#wt-target').value);
+    if(!t||t<=0)return toast('请输入正确目标体重');
+    weight.target=t;DB.set('weight',weight);renderWeight();toast('目标已设置');
+  };
+  $('#wt-list').addEventListener('click',e=>{
+    const b=e.target.closest('[data-del]');if(!b)return;
+    weight.list=weight.list.filter(r=>r.date!==b.dataset.del);
+    DB.set('weight',weight);renderWeight();
+  });
+}
+function renderWeight(){
+  const list=weight.list;
+  const latest=list[list.length-1],prev=list[list.length-2];
+  const diff=latest&&prev?latest.w-prev.w:null;
+  $('#wt-target').value=weight.target||'';
+  $('#wt-stats').innerHTML=
+    `<div class="stat"><div class="stat-t">最新体重</div><div class="stat-v">${latest?latest.w+' kg':'—'}</div></div>
+     <div class="stat"><div class="stat-t">较上次</div><div class="stat-v" style="color:${diff==null?'':diff>0?'#FF8B8B':diff<0?'#3FA46A':''}">${diff==null?'—':(diff>0?'+':'')+diff.toFixed(1)+' kg'}</div></div>
+     <div class="stat"><div class="stat-t">目标体重</div><div class="stat-v">${weight.target?weight.target+' kg':'—'}</div></div>`;
+  drawWeight();
+  $('#wt-list').innerHTML=[...list].reverse().slice(0,7).map(r=>`
+    <div class="li"><div class="li-m">${r.date}</div><b>${r.w} kg</b>
+    <button class="btn small ghost" data-del="${r.date}">删</button></div>`).join('')
+    ||'<div class="muted center">暂无记录</div>';
+}
+/* Canvas 近30天体重折线图（含目标线） */
+function drawWeight(){
+  const[ctx,W,H]=fitCanvas($('#wt-chart'),210);
+  ctx.clearRect(0,0,W,H);
+  const from=addDays(today(),-29);
+  const pts=weight.list.filter(r=>r.date>=from);
+  const sub=cssVar('--sub'),line=cssVar('--line');
+  if(!pts.length){
+    ctx.fillStyle=sub;ctx.font='13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('近30天暂无记录',W/2,H/2);return;
+  }
+  /* 计算纵轴范围（包含目标线） */
+  let vs=pts.map(p=>p.w);if(weight.target)vs.push(weight.target);
+  let ymin=Math.min(...vs),ymax=Math.max(...vs);
+  if(ymax-ymin<1){ymin-=0.5;ymax+=0.5}
+  const padY=(ymax-ymin)*0.15;ymin-=padY;ymax+=padY;
+  const pl=38,pr=10,pt=12,pb=22;
+  const X=d=>pl+Math.round((parseD(d)-parseD(from))/86400000)*(W-pl-pr)/29;
+  const Y=v=>pt+(ymax-v)*(H-pt-pb)/(ymax-ymin);
+  /* 网格线与纵轴刻度 */
+  ctx.font='10px sans-serif';ctx.textAlign='right';ctx.textBaseline='middle';
+  [ymin,(ymin+ymax)/2,ymax].forEach(v=>{
+    ctx.strokeStyle=line;ctx.beginPath();ctx.moveTo(pl,Y(v));ctx.lineTo(W-pr,Y(v));ctx.stroke();
+    ctx.fillStyle=sub;ctx.fillText(v.toFixed(1),pl-4,Y(v));
+  });
+  ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText(from.slice(5),X(from),H-pb+6);ctx.fillText(today().slice(5),X(today()),H-pb+6);
+  /* 目标体重虚线 */
+  if(weight.target){
+    ctx.strokeStyle='#FF8B8B';ctx.setLineDash([5,4]);ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(pl,Y(weight.target));ctx.lineTo(W-pr,Y(weight.target));ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#FF8B8B';ctx.textAlign='left';ctx.textBaseline='bottom';
+    ctx.fillText('目标 '+weight.target,pl+2,Y(weight.target)-2);
+  }
+  /* 折线与数据点 */
+  ctx.strokeStyle=cssVar('--primary');ctx.lineWidth=2;ctx.lineJoin='round';ctx.beginPath();
+  pts.forEach((p,i)=>{const x=X(p.date),y=Y(p.w);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+  ctx.stroke();
+  ctx.fillStyle=cssVar('--primary');
+  pts.forEach(p=>{ctx.beginPath();ctx.arc(X(p.date),Y(p.w),3,0,7);ctx.fill()});
+  /* 最新值标注 */
+  const lp=pts[pts.length-1];
+  ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+  ctx.fillText(lp.w,Math.min(Math.max(X(lp.date),pl+14),W-pr-14),Y(lp.w)-6);
+}
+
+/* =====================================================
+ * 3. 文案
+ * ===================================================== */
+let copies=DB.get('copy',[]),copyEditId=null;
+function initCopy(){
+  $('#cp-add').onclick=()=>{
+    const cat=$('#cp-cat').value.trim()||'未分类',text=$('#cp-text').value.trim();
+    if(!text)return toast('请输入文案内容');
+    if(copyEditId){
+      const it=copies.find(c=>c.id===copyEditId);
+      if(it){it.cat=cat;it.text=text}
+      copyEditId=null;$('#cp-cancel').style.display='none';
+      $('#cp-form-title').textContent='新增文案';$('#cp-add').textContent='保存';
+    }else copies.unshift({id:uid(),cat,text,time:today()});
+    DB.set('copy',copies);$('#cp-cat').value='';$('#cp-text').value='';
+    renderCopies();toast('已保存');
+  };
+  $('#cp-cancel').onclick=()=>{
+    copyEditId=null;$('#cp-cat').value='';$('#cp-text').value='';
+    $('#cp-cancel').style.display='none';$('#cp-form-title').textContent='新增文案';$('#cp-add').textContent='保存';
+  };
+  $('#cp-search').addEventListener('input',renderCopies);
+  $('#cp-list').addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const it=copies.find(c=>c.id===b.dataset.id);if(!it)return;
+    if(b.dataset.act==='copy')copyText(it.text,'文案已复制');
+    else if(b.dataset.act==='edit'){
+      copyEditId=it.id;$('#cp-cat').value=it.cat;$('#cp-text').value=it.text;
+      $('#cp-cancel').style.display='';$('#cp-form-title').textContent='编辑文案';$('#cp-add').textContent='更新';
+      window.scrollTo(0,0);
+    }else if(b.dataset.act==='del'){
+      if(!confirm('删除这条文案？'))return;
+      copies=copies.filter(c=>c.id!==it.id);DB.set('copy',copies);renderCopies();
+    }
+  });
+}
+function renderCopies(){
+  const kw=$('#cp-search').value.trim().toLowerCase();
+  $('#cp-cats').innerHTML=[...new Set(copies.map(c=>c.cat))].map(c=>`<option value="${esc(c)}">`).join('');
+  const list=copies.filter(c=>!kw||c.text.toLowerCase().includes(kw)||c.cat.toLowerCase().includes(kw));
+  $('#cp-list').innerHTML=list.map(c=>`
+    <div class="li" style="align-items:flex-start">
+      <span class="chip" style="background:var(--accent);color:#1d1d1d">${esc(c.cat)}</span>
+      <div class="li-m"><div class="pre">${esc(c.text)}</div><div class="muted">${c.time||''}</div></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn small" data-act="copy" data-id="${c.id}">复制</button>
+        <button class="btn small ghost" data-act="edit" data-id="${c.id}">编辑</button>
+        <button class="btn small danger" data-act="del" data-id="${c.id}">删除</button>
+      </div>
+    </div>`).join('')||'<div class="muted center">'+(kw?'没有匹配的文案':'暂无文案，先添加一条吧')+'</div>';
+}
+
+/* =====================================================
+ * 4. 加班时长
+ * ===================================================== */
+let ots=DB.get('ot',[]);
+const t2m=t=>{const[a,b]=t.split(':').map(Number);return a*60+b};
+function initOt(){
+  $('#ot-date').value=today();
+  $('#ot-add').onclick=()=>{
+    const date=$('#ot-date').value||today(),start=$('#ot-start').value,end=$('#ot-end').value;
+    if(!start||!end)return toast('请选择起止时间');
+    if(start===end)return toast('起止时间不能相同');
+    let mins=t2m(end)-t2m(start);
+    if(mins<0)mins+=24*60; /* 跨零点自动加24小时 */
+    ots.unshift({id:uid(),date,start,end,hours:Math.round(mins/60*10)/10});
+    DB.set('ot',ots);renderOt();toast('已保存');
+  };
+  $('#ot-list').addEventListener('click',e=>{
+    const b=e.target.closest('[data-del]');if(!b)return;
+    if(!confirm('删除这条加班记录？'))return;
+    ots=ots.filter(r=>r.id!==b.dataset.del);DB.set('ot',ots);renderOt();
+  });
+}
+function renderOt(){
+  /* 本周（周一至周日）与本月统计 */
+  const n=new Date(),day=(n.getDay()+6)%7;
+  const mon=new Date(n);mon.setDate(n.getDate()-day);
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  const ws=dstr(mon),we=dstr(sun),ym=today().slice(0,7);
+  let week=0,month=0;
+  ots.forEach(r=>{if(r.date>=ws&&r.date<=we)week+=r.hours;if(r.date.startsWith(ym))month+=r.hours});
+  $('#ot-stats').innerHTML=
+    `<div class="stat"><div class="stat-t">本周累计</div><div class="stat-v">${week.toFixed(1)} h</div></div>
+     <div class="stat"><div class="stat-t">本月累计</div><div class="stat-v">${month.toFixed(1)} h</div></div>
+     <div class="stat"><div class="stat-t">记录条数</div><div class="stat-v">${ots.length}</div></div>`;
+  const sorted=[...ots].sort((a,b)=>(b.date+b.start).localeCompare(a.date+a.start));
+  $('#ot-list').innerHTML=sorted.map(r=>`
+    <div class="li"><div class="li-m"><div>${r.date}</div>
+    <div class="muted">${r.start} ~ ${r.end}</div></div>
+    <b>${r.hours} h</b><button class="btn small ghost" data-del="${r.id}">删</button></div>`).join('')
+    ||'<div class="muted center">暂无记录</div>';
+}
+
+/* =====================================================
+ * 5. 拼豆图纸
+ * ===================================================== */
+/* 旧版像素画调色板（仅用于把旧画布图纸迁移为图片） */
+const PX_PALETTE=[['白','#FFFFFF'],['黑','#262626'],['灰','#9E9E9E'],['红','#E53935'],['橙','#FB8C00'],
+  ['黄','#FDD835'],['绿','#43A047'],['青','#00ACC1'],['蓝','#1E88E5'],['紫','#8E24AA'],
+  ['粉','#F48FB1'],['棕','#6D4C41'],['肤','#FFCCBC'],['墨绿','#1B5E20'],['深蓝','#0D47A1'],['米','#FFF59D']];
+/* 数据结构：{folders:[名称...], drawings:[{id,name,img,folder,time}]} */
+let pixel=DB.get('pixel',null);
+let pxFilter=''; /* 当前筛选的文件夹，'' 表示全部 */
+/* 旧数据迁移：像素画布图纸渲染成图片，统一为成品图纸 */
+function pxMigrate(){
+  if(pixel&&pixel.folders)return;
+  const old=(pixel&&pixel.drawings)||[];
+  const drawings=[];
+  old.forEach(d=>{
+    if(d.type==='img'){d.folder=d.folder||'默认';drawings.push(d)}
+    else if(d.grid){
+      const n=d.size,s=8,oc=document.createElement('canvas');
+      oc.width=oc.height=n*s;
+      const c=oc.getContext('2d');
+      c.fillStyle='#fff';c.fillRect(0,0,n*s,n*s);
+      d.grid.forEach((col,i)=>{
+        if(col<0)return;
+        c.fillStyle=PX_PALETTE[col][1];
+        c.fillRect((i%n)*s,Math.floor(i/n)*s,s,s);
+      });
+      drawings.push({id:d.id,type:'img',name:d.name,img:oc.toDataURL('image/png'),folder:'默认',time:today()});
+    }
+  });
+  pixel={folders:[...new Set(['默认',...drawings.map(d=>d.folder)])],drawings};
+  DB.set('pixel',pixel);
+}
+function initPixel(){
+  pxMigrate();
+  /* 新建文件夹 */
+  $('#pf-add-folder').onclick=()=>{
+    const name=$('#pf-new-folder').value.trim();
+    if(!name)return toast('请输入文件夹名称');
+    if(pixel.folders.includes(name))return toast('文件夹已存在');
+    pixel.folders.push(name);
+    DB.set('pixel',pixel);$('#pf-new-folder').value='';
+    renderPixel();toast('文件夹已创建');
+  };
+  $('#pf-new-folder').addEventListener('keydown',e=>{if(e.key==='Enter')$('#pf-add-folder').click()});
+  /* 删除当前筛选的文件夹（图纸移到“默认”） */
+  $('#pf-del-folder').onclick=()=>{
+    if(!pxFilter)return;
+    if(pxFilter==='默认')return toast('默认文件夹不能删除');
+    if(!confirm(`删除文件夹「${pxFilter}」？里面的图纸会移到「默认」`))return;
+    pixel.drawings.forEach(d=>{if(d.folder===pxFilter)d.folder='默认'});
+    pixel.folders=pixel.folders.filter(f=>f!==pxFilter);
+    pxFilter='';DB.set('pixel',pixel);renderPixel();toast('文件夹已删除');
+  };
+  /* 上传成品图纸到所选文件夹 */
+  $('#px-upload-btn').onclick=()=>$('#px-file').click();
+  $('#px-file').onchange=e=>{
+    const f=e.target.files[0];e.target.value='';if(!f)return;
+    const img=new Image();
+    img.onload=()=>{
+      /* 最长边压缩到300px，控制 localStorage 占用 */
+      const M=300,sc=Math.min(1,M/Math.max(img.width,img.height));
+      const w=Math.max(1,Math.round(img.width*sc)),h=Math.max(1,Math.round(img.height*sc));
+      const oc=document.createElement('canvas');oc.width=w;oc.height=h;
+      oc.getContext('2d').drawImage(img,0,0,w,h);
+      const dataURL=oc.toDataURL('image/png');
+      URL.revokeObjectURL(img.src);
+      const name=$('#px-name').value.trim()||('成品-'+today());
+      const folder=$('#pf-target').value||'默认';
+      pixel.drawings.unshift({id:uid(),type:'img',name,img:dataURL,folder,time:today()});
+      $('#px-name').value='';
+      DB.set('pixel',pixel);renderPixel();toast('已保存到「'+folder+'」');
+    };
+    img.onerror=()=>toast('图片读取失败');
+    img.src=URL.createObjectURL(f);
+  };
+  /* 文件夹页签筛选 */
+  $('#pf-tabs').addEventListener('click',e=>{
+    const chip=e.target.closest('[data-folder]');if(!chip)return;
+    pxFilter=chip.dataset.folder;renderPixel();
+  });
+  /* 点击缩略图查看大图 */
+  $('#pf-grid').addEventListener('click',e=>{
+    const cell=e.target.closest('[data-view]');if(!cell)return;
+    openPxView(cell.dataset.view);
+  });
+  /* 弹层内操作：移动到文件夹 / 删除（用 data-pxact 避免与待办弹层冲突） */
+  $('#mBody').addEventListener('click',e=>{
+    const b=e.target.closest('[data-pxact]');if(!b)return;
+    const d=pixel.drawings.find(x=>x.id===b.dataset.id);if(!d)return;
+    if(b.dataset.pxact==='move'){
+      d.folder=$('#mv-folder').value;
+      DB.set('pixel',pixel);renderPixel();closeModal();toast('已移动到「'+d.folder+'」');
+    }else if(b.dataset.pxact==='del'){
+      if(!confirm('删除图纸「'+d.name+'」？'))return;
+      pixel.drawings=pixel.drawings.filter(x=>x.id!==d.id);
+      DB.set('pixel',pixel);renderPixel();closeModal();
+    }
+  });
+}
+/* 大图预览弹层 */
+function openPxView(id){
+  const d=pixel.drawings.find(x=>x.id===id);if(!d)return;
+  $('#mTitle').textContent=d.name;
+  $('#mBody').innerHTML=`
+    <img src="${d.img}" alt="${esc(d.name)}" style="width:100%;border-radius:12px;image-rendering:pixelated">
+    <div class="muted mt">📁 ${esc(d.folder)} · ${d.time||''}</div>
+    <div class="row mt">
+      <select id="mv-folder">${pixel.folders.map(f=>`<option ${f===d.folder?'selected':''}>${esc(f)}</option>`).join('')}</select>
+      <button class="btn small" data-pxact="move" data-id="${d.id}" style="flex:0 0 auto">移动</button>
+    </div>
+    <button class="btn danger mt" data-pxact="del" data-id="${d.id}">删除这张图纸</button>`;
+  openModal();
+}
+function renderPixel(){
+  /* 上传目标文件夹下拉 */
+  $('#pf-target').innerHTML=pixel.folders.map(f=>`<option>${esc(f)}</option>`).join('');
+  /* 文件夹页签（含数量） */
+  const cnt=f=>pixel.drawings.filter(d=>d.folder===f).length;
+  $('#pf-tabs').innerHTML=
+    `<span class="ftab${pxFilter===''?' on':''}" data-folder="">全部 ${pixel.drawings.length}</span>`+
+    pixel.folders.map(f=>`<span class="ftab${pxFilter===f?' on':''}" data-folder="${esc(f)}">📁 ${esc(f)} ${cnt(f)}</span>`).join('');
+  $('#pf-del-folder').style.display=pxFilter?'':'none';
+  /* 缩略图网格 */
+  const list=pixel.drawings.filter(d=>!pxFilter||d.folder===pxFilter);
+  $('#pf-grid').innerHTML=list.map(d=>`
+    <div class="pcell" data-view="${d.id}">
+      <img src="${d.img}" alt="${esc(d.name)}">
+      <div class="pname">${esc(d.name)}</div>
+      <div class="muted" style="font-size:11px">${esc(d.folder)}</div>
+    </div>`).join('')
+    ||'<div class="muted center" style="grid-column:1/-1">这个分类还没有图纸，上传一张吧</div>';
+}
+
+/* =====================================================
+ * 6. 心情日记
+ * ===================================================== */
+const MOODS=['😄','🥰','🙂','😐','😢','😡','😴','🤒'];
+let moods=DB.get('mood',[]),moodSel='😄';
+function initMood(){
+  $('#md-moods').innerHTML=MOODS.map(m=>`<span class="mood${m===moodSel?' on':''}" data-m="${m}">${m}</span>`).join('');
+  $('#md-moods').addEventListener('click',e=>{
+    const m=e.target.closest('.mood');if(!m)return;
+    moodSel=m.dataset.m;
+    $$('#md-moods .mood').forEach(x=>x.classList.toggle('on',x.dataset.m===moodSel));
+  });
+  $('#md-date').value=today();
+  $('#md-add').onclick=()=>{
+    const date=$('#md-date').value||today(),text=$('#md-text').value.trim();
+    if(!text)return toast('写点什么再保存吧');
+    moods.unshift({id:uid(),date,mood:moodSel,text});
+    DB.set('mood',moods);$('#md-text').value='';renderMoods();toast('已保存');
+  };
+  $('#md-list').addEventListener('click',e=>{
+    const b=e.target.closest('[data-del]');if(!b)return;
+    if(!confirm('删除这篇日记？'))return;
+    moods=moods.filter(m=>m.id!==b.dataset.del);DB.set('mood',moods);renderMoods();
+  });
+}
+function renderMoods(){
+  const sorted=[...moods].sort((a,b)=>b.date.localeCompare(a.date));
+  $('#md-list').innerHTML=sorted.map(m=>`
+    <div class="li" style="align-items:flex-start">
+      <span style="font-size:24px">${m.mood}</span>
+      <div class="li-m"><div class="muted">${m.date}</div><div class="pre">${esc(m.text)}</div></div>
+      <button class="btn small ghost" data-del="${m.id}">删</button>
+    </div>`).join('')||'<div class="muted center">暂无日记</div>';
+}
+
+/* =====================================================
+ * 7. 日历待办（待办绑定日期，全局数据）
+ * ===================================================== */
+let todos=DB.get('todo',[]);
+let calY=new Date().getFullYear(),calM=new Date().getMonth(),calSel=today();
+function initCal(){
+  $('#cal-prev').onclick=()=>{calM--;if(calM<0){calM=11;calY--}renderCal()};
+  $('#cal-next').onclick=()=>{calM++;if(calM>11){calM=0;calY++}renderCal()};
+  $('#cal-today').onclick=()=>{const n=new Date();calY=n.getFullYear();calM=n.getMonth();renderCal()};
+  $('#cal-grid').addEventListener('click',e=>{
+    const c=e.target.closest('.cell[data-date]');if(!c)return;
+    calSel=c.dataset.date;openTodoModal(calSel);
+  });
+  $('#mClose').onclick=closeModal;
+  $('#modalMask').onclick=closeModal;
+  /* 弹层内待办操作（事件委托） */
+  $('#mBody').addEventListener('click',e=>{
+    const add=e.target.closest('#td-add');
+    if(add){
+      const inp=$('#td-input'),text=inp.value.trim();
+      if(!text)return toast('请输入待办内容');
+      todos.push({id:uid(),date:calSel,text,done:false});
+      DB.set('todo',todos);inp.value='';renderTodoModal();renderCal();return;
+    }
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const t=todos.find(x=>x.id===b.dataset.id);if(!t)return;
+    if(b.dataset.act==='toggle'){t.done=!t.done}
+    else if(b.dataset.act==='del'){todos=todos.filter(x=>x.id!==t.id)}
+    DB.set('todo',todos);renderTodoModal();renderCal();
+  });
+  $('#mBody').addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&e.target.id==='td-input')$('#td-add').click();
+  });
+}
+function openModal(){$('#modalMask').style.display='block';$('#modal').style.display='block'}
+function closeModal(){$('#modalMask').style.display='none';$('#modal').style.display='none'}
+function openTodoModal(date){
+  $('#mTitle').textContent=date+' 待办';
+  renderTodoModal();openModal();
+}
+function renderTodoModal(){
+  const list=todos.filter(t=>t.date===calSel);
+  $('#mBody').innerHTML=`
+    <div class="row" style="margin-bottom:8px">
+      <input id="td-input" placeholder="新增当日待办">
+      <button class="btn" id="td-add" style="flex:0 0 auto">添加</button>
+    </div>
+    ${list.map(t=>`
+      <div class="sub">
+        <input type="checkbox" data-act="toggle" data-id="${t.id}" ${t.done?'checked':''}>
+        <span class="t ${t.done?'done':''}">${esc(t.text)}</span>
+        <button class="btn small ghost" data-act="del" data-id="${t.id}">删</button>
+      </div>`).join('')||'<div class="muted center">当日暂无待办</div>'}`;
+}
+/* 日历格子内直接显示待办文字：最多2条，多余显示+N */
+function todoDots(ds){
+  const list=todos.filter(t=>t.date===ds);
+  if(!list.length)return'';
+  const items=list.slice(0,2).map(t=>`<div class="ttext${t.done?' done':''}" title="${esc(t.text)}">${esc(t.text)}</div>`).join('');
+  const more=list.length>2?`<div class="more">+${list.length-2}</div>`:'';
+  return`<div class="ttodos">${items}${more}</div>`;
+}
+function renderCal(){
+  $('#cal-title').textContent=`${calY}年${calM+1}月`;
+  const first=new Date(calY,calM,1),offset=first.getDay();
+  const dim=new Date(calY,calM+1,0).getDate();
+  const td=today();
+  let html=['日','一','二','三','四','五','六'].map(w=>`<div class="wk">${w}</div>`).join('');
+  for(let i=0;i<42;i++){
+    const d=i-offset+1;
+    if(d<1||d>dim){html+='<div class="cell out"></div>';continue}
+    const ds=`${calY}-${pad(calM+1)}-${pad(d)}`;
+    html+=`<div class="cell${ds===td?' today':''}" data-date="${ds}"><span>${d}</span>${todoDots(ds)}</div>`;
+  }
+  $('#cal-grid').innerHTML=html;
+}
+
+/* =====================================================
+ * 8. 目标清单
+ * ===================================================== */
+let goals=DB.get('goal',[]),goalEditId=null,archOpen=false;
+function initGoal(){
+  $('#gl-add').onclick=()=>{
+    const title=$('#gl-title').value.trim(),deadline=$('#gl-deadline').value;
+    if(!title)return toast('请输入目标内容');
+    if(goalEditId){
+      const g=goals.find(x=>x.id===goalEditId);
+      if(g){g.title=title;g.deadline=deadline}
+      resetGoalForm();
+    }else goals.unshift({id:uid(),title,deadline,subs:[],archived:false,created:today()});
+    DB.set('goal',goals);renderGoals();toast('已保存');
+  };
+  $('#gl-cancel').onclick=resetGoalForm;
+  $('#gl-arch-toggle').onclick=()=>{
+    archOpen=!archOpen;
+    $('#gl-arch-list').style.display=archOpen?'':'none';
+    $('#gl-arch-arrow').textContent=archOpen?'▲':'▼';
+  };
+  const wrap=$('#page-goal');
+  wrap.addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const g=goals.find(x=>x.id===b.dataset.gid);if(!g)return;
+    const act=b.dataset.act;
+    if(act==='edit'){
+      goalEditId=g.id;$('#gl-title').value=g.title;$('#gl-deadline').value=g.deadline||'';
+      $('#gl-form-title').textContent='编辑目标';$('#gl-add').textContent='更新目标';
+      $('#gl-cancel').style.display='';window.scrollTo(0,0);
+    }
+    else if(act==='arch'){g.archived=true;DB.set('goal',goals);renderGoals();toast('已归档')}
+    else if(act==='unarch'){g.archived=false;DB.set('goal',goals);renderGoals()}
+    else if(act==='del'){
+      if(!confirm('删除目标「'+g.title+'」？'))return;
+      goals=goals.filter(x=>x.id!==g.id);DB.set('goal',goals);renderGoals();
+    }
+    else if(act==='addsub'){
+      const inp=wrap.querySelector(`[data-subinput="${g.id}"]`),text=inp.value.trim();
+      if(!text)return toast('请输入子任务');
+      g.subs.push({id:uid(),text,done:false});
+      DB.set('goal',goals);renderGoals();
+    }
+    else if(act==='delsub'){
+      g.subs=g.subs.filter(s=>s.id!==b.dataset.sid);DB.set('goal',goals);renderGoals();
+    }
+  });
+  wrap.addEventListener('change',e=>{
+    const c=e.target.closest('[data-act="tglsub"]');if(!c)return;
+    const g=goals.find(x=>x.id===c.dataset.gid);if(!g)return;
+    const s=g.subs.find(x=>x.id===c.dataset.sid);if(!s)return;
+    s.done=c.checked;DB.set('goal',goals);renderGoals();
+  });
+  wrap.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&e.target.dataset.subinput){
+      const g=e.target.dataset.subinput;
+      wrap.querySelector(`[data-act="addsub"][data-gid="${g}"]`).click();
+    }
+  });
+}
+function resetGoalForm(){
+  goalEditId=null;$('#gl-title').value='';$('#gl-deadline').value='';
+  $('#gl-form-title').textContent='新建目标';$('#gl-add').textContent='保存目标';
+  $('#gl-cancel').style.display='none';
+}
+function goalCard(g,archived){
+  const total=g.subs.length,done=g.subs.filter(s=>s.done).length;
+  const pct=total?Math.round(done/total*100):0;
+  const overdue=g.deadline&&g.deadline<today()&&pct<100;
+  return`<div class="card">
+    <div class="row" style="margin-top:0">
+      <b style="flex:1" class="pre">${esc(g.title)}</b>
+      <span class="muted" style="color:${overdue?'var(--danger)':''}">${g.deadline?'截止 '+g.deadline:'无截止'}${overdue?'（已过期）':''}</span>
+    </div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="muted mt">${pct}% · 子任务 ${done}/${total}</div>
+    <div class="mt">${g.subs.map(s=>`
+      <div class="sub">
+        <input type="checkbox" data-act="tglsub" data-gid="${g.id}" data-sid="${s.id}" ${s.done?'checked':''}>
+        <span class="t ${s.done?'done':''}">${esc(s.text)}</span>
+        <button class="btn small ghost" data-act="delsub" data-gid="${g.id}" data-sid="${s.id}">删</button>
+      </div>`).join('')}</div>
+    ${archived?'':`<div class="row">
+      <input placeholder="添加子任务，回车快速添加" data-subinput="${g.id}">
+      <button class="btn small" data-act="addsub" data-gid="${g.id}" style="flex:0 0 auto">添加</button>
+    </div>`}
+    <div class="row">
+      ${archived
+        ?`<button class="btn small ghost" data-act="unarch" data-gid="${g.id}">恢复</button>`
+        :`<button class="btn small ghost" data-act="edit" data-gid="${g.id}">编辑</button>
+           <button class="btn small ghost" data-act="arch" data-gid="${g.id}">归档</button>`}
+      <button class="btn small danger" data-act="del" data-gid="${g.id}">删除</button>
+    </div>
+  </div>`;
+}
+function renderGoals(){
+  const act=goals.filter(g=>!g.archived),arch=goals.filter(g=>g.archived);
+  $('#gl-list').innerHTML=act.map(g=>goalCard(g,false)).join('')
+    ||'<div class="card muted center">暂无目标，立一个吧</div>';
+  $('#gl-arch-list').innerHTML=arch.map(g=>goalCard(g,true)).join('')
+    ||'<div class="muted center">暂无归档目标</div>';
+}
+
+/* =====================================================
+ * 9. 经期记录
+ * ===================================================== */
+let period=DB.get('period',{records:[],cycle:28,len:5});
+let pdY=new Date().getFullYear(),pdM=new Date().getMonth();
+function initPeriod(){
+  $('#pd-date').value=today();
+  $('#pd-add').onclick=()=>{
+    const date=$('#pd-date').value;
+    if(!date)return toast('请选择日期');
+    if(period.records.includes(date))return toast('该日期已记录');
+    period.records.push(date);period.records.sort();
+    DB.set('period',period);renderPeriod();toast('已保存');
+  };
+  $('#pd-cycle').onchange=()=>{
+    const v=parseInt($('#pd-cycle').value);
+    if(v>=20&&v<=45){period.cycle=v;DB.set('period',period);renderPeriod()}
+  };
+  $('#pd-len').onchange=()=>{
+    const v=parseInt($('#pd-len').value);
+    if(v>=2&&v<=10){period.len=v;DB.set('period',period);renderPeriod()}
+  };
+  $('#pd-prev').onclick=()=>{pdM--;if(pdM<0){pdM=11;pdY--}renderPeriod()};
+  $('#pd-next').onclick=()=>{pdM++;if(pdM>11){pdM=0;pdY++}renderPeriod()};
+  $('#pd-list').addEventListener('click',e=>{
+    const b=e.target.closest('[data-del]');if(!b)return;
+    if(!confirm('删除这条经期记录？'))return;
+    period.records=period.records.filter(r=>r!==b.dataset.del);
+    DB.set('period',period);renderPeriod();
+  });
+}
+/* 计算预测信息：下次经期、易孕期 */
+function periodPredict(){
+  if(!period.records.length)return null;
+  const last=period.records[period.records.length-1];
+  let next=addDays(last,period.cycle);
+  /* 若预测日期已过，则按周期顺延到未来 */
+  while(next<today())next=addDays(next,period.cycle);
+  const ovu=addDays(next,-14); /* 排卵日 ≈ 下次经期前14天 */
+  return{last,next,ovu,fs:addDays(ovu,-5),fe:addDays(ovu,4)};
+}
+function renderPeriod(){
+  $('#pd-cycle').value=period.cycle;$('#pd-len').value=period.len;
+  const p=periodPredict();
+  if(!p){
+    $('#pd-stats').innerHTML='<div class="stat" style="grid-column:1/4"><div class="stat-v muted" style="font-size:14px">先记录一次经期开始日期</div></div>';
+  }else{
+    const left=Math.round((parseD(p.next)-parseD(today()))/86400000);
+    $('#pd-stats').innerHTML=
+      `<div class="stat"><div class="stat-t">下次预计</div><div class="stat-v" style="font-size:14px">${p.next.slice(5)}</div></div>
+       <div class="stat"><div class="stat-t">${left>=0?'剩余天数':'已推迟'}</div><div class="stat-v">${Math.abs(left)} 天</div></div>
+       <div class="stat"><div class="stat-t">易孕期</div><div class="stat-v" style="font-size:13px">${p.fs.slice(5)}~${p.fe.slice(5)}</div></div>`;
+  }
+  /* 日历标记：经期（历史+预测）、易孕期（预测） */
+  const inRange=(ds,a,b)=>ds>=a&&ds<=b;
+  const mark=ds=>{
+    let cls='';
+    period.records.forEach(r=>{if(inRange(ds,r,addDays(r,period.len-1)))cls='pd'});
+    if(p){
+      if(inRange(ds,p.next,addDays(p.next,period.len-1)))cls='pd';
+      if(inRange(ds,p.fs,p.fe))cls=cls?cls+' ft':'ft';
+    }
+    return cls;
+  };
+  const first=new Date(pdY,pdM,1),offset=first.getDay();
+  const dim=new Date(pdY,pdM+1,0).getDate();
+  const td=today();
+  let html=['日','一','二','三','四','五','六'].map(w=>`<div class="wk">${w}</div>`).join('');
+  for(let i=0;i<42;i++){
+    const d=i-offset+1;
+    if(d<1||d>dim){html+='<div class="cell out"></div>';continue}
+    const ds=`${pdY}-${pad(pdM+1)}-${pad(d)}`;
+    html+=`<div class="cell ${mark(ds)}${ds===td?' today':''}"><span>${d}</span></div>`;
+  }
+  $('#pd-cal-title').textContent=`${pdY}年${pdM+1}月`;
+  $('#pd-cal').innerHTML=html;
+  $('#pd-list').innerHTML=[...period.records].reverse().map(r=>`
+    <div class="li"><div class="li-m">${r} 开始</div>
+    <button class="btn small ghost" data-del="${r}">删</button></div>`).join('')
+    ||'<div class="muted center">暂无记录</div>';
+}
+
+/* =====================================================
+ * 10. 密码管理
+ * ===================================================== */
+let pwds=DB.get('pwd',[]);
+const pwRevealed=new Set(); /* 已显示明文的项目（仅本次会话） */
+function initPwd(){
+  $('#pw-add').onclick=()=>{
+    const name=$('#pw-name').value.trim(),account=$('#pw-account').value.trim(),pass=$('#pw-pass').value;
+    if(!name||!account||!pass)return toast('请填写完整信息');
+    pwds.unshift({id:uid(),name,account,pass});
+    DB.set('pwd',pwds);
+    $('#pw-name').value='';$('#pw-account').value='';$('#pw-pass').value='';
+    renderPwds();toast('已保存');
+  };
+  $('#pw-search').addEventListener('input',renderPwds);
+  $('#pw-list').addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const it=pwds.find(x=>x.id===b.dataset.id);if(!it)return;
+    const act=b.dataset.act;
+    if(act==='cpa')copyText(it.account,'账号已复制');
+    else if(act==='cpp')copyText(it.pass,'密码已复制');
+    else if(act==='show'){pwRevealed.has(it.id)?pwRevealed.delete(it.id):pwRevealed.add(it.id);renderPwds()}
+    else if(act==='del'){
+      if(!confirm('删除「'+it.name+'」的账号信息？'))return;
+      pwds=pwds.filter(x=>x.id!==it.id);DB.set('pwd',pwds);renderPwds();
+    }
+  });
+}
+function renderPwds(){
+  const kw=$('#pw-search').value.trim().toLowerCase();
+  const list=pwds.filter(p=>!kw||p.name.toLowerCase().includes(kw)||p.account.toLowerCase().includes(kw));
+  $('#pw-list').innerHTML=list.map(p=>{
+    const show=pwRevealed.has(p.id);
+    return`<div class="li" style="align-items:flex-start">
+      <div class="li-m">
+        <b>${esc(p.name)}</b>
+        <div class="muted pre">账号：${esc(p.account)}</div>
+        <div class="muted">密码：${show?esc(p.pass):'••••••••'}</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:150px">
+        <button class="btn small" data-act="cpa" data-id="${p.id}">复制账号</button>
+        <button class="btn small" data-act="cpp" data-id="${p.id}">复制密码</button>
+        <button class="btn small ghost" data-act="show" data-id="${p.id}">${show?'隐藏':'显示'}</button>
+        <button class="btn small danger" data-act="del" data-id="${p.id}">删除</button>
+      </div>
+    </div>`;
+  }).join('')||'<div class="muted center">'+(kw?'没有匹配结果':'暂无保存的账号')+'</div>';
+}
+
+/* =====================================================
+ * 启动
+ * ===================================================== */
+const RENDERS={
+  home:renderCheckin,
+  ledger:renderLedger,weight:renderWeight,copy:renderCopies,ot:renderOt,
+  pixel:renderPixel,mood:renderMoods,cal:renderCal,
+  goal:renderGoals,period:renderPeriod,pwd:renderPwds
+};
+window.addEventListener('DOMContentLoaded',()=>{
+  initTheme();buildNav();
+  initHome();
+  initLedger();initWeight();initCopy();initOt();initPixel();
+  initMood();initCal();initGoal();initPeriod();initPwd();
+  go('home'); /* 默认打开首页 */
+});
+/* 窗口尺寸变化时重绘当前页图表/画布 */
+let rzTimer;
+window.addEventListener('resize',()=>{
+  clearTimeout(rzTimer);
+  rzTimer=setTimeout(()=>{if(['ledger','weight','pixel'].includes(currentPage))renderCurrent()},200);
+});
+</script>
+</body>
+</html>
