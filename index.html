@@ -166,6 +166,35 @@ canvas.chart{width:100%;display:block}
 }
 .pcell:active img{transform:scale(.96)}
 .pcell .pname{font-size:13px;font-weight:600;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ========== 分段控制器（通用） ========== */
+.seg{
+  display:flex;gap:6px;background:var(--field);border:2px solid var(--line);
+  border-radius:999px;padding:4px;margin-top:8px;
+}
+.seg-btn{
+  flex:1;text-align:center;padding:8px 0;border-radius:999px;font-size:14px;
+  cursor:pointer;user-select:none;color:var(--sub);transition:background .15s;
+}
+.seg-btn.on{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#3B3225;font-weight:700}
+/* ========== 密码管理卡片 ========== */
+.pwcard{
+  display:flex;gap:10px;padding:12px;margin-bottom:10px;
+  background:var(--field);border:2px solid var(--line);border-radius:16px;
+}
+.pw-main{flex:1;min-width:0}
+.pw-name{font-size:17px;font-weight:800;margin-bottom:5px;word-break:break-all}
+.pw-line{font-size:14px;line-height:1.6;word-break:break-all}
+.pw-line .lb{color:var(--sub)}
+.pw-val{color:#2FA98C} /* 密码明文用绿色显示 */
+.pw-cps{display:flex;gap:8px;margin-top:10px}
+.pw-cps .btn{flex:0 0 auto}
+.pw-acts{display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
+.pw-ic{
+  width:38px;height:38px;border-radius:50%;border:2px solid var(--line);background:var(--card);
+  font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.pw-ic:active{transform:scale(.9)}
+.pw-ic.danger{border-color:var(--danger)}
 /* ========== 心情选择 ========== */
 .moods{display:flex;gap:6px;flex-wrap:wrap}
 .mood{font-size:24px;padding:6px 10px;border-radius:12px;border:2px solid transparent;cursor:pointer;background:var(--field)}
@@ -346,8 +375,17 @@ canvas.chart{width:100%;display:block}
     <h2>⏰ 加班时长</h2>
     <div class="card">
       <h3>录入加班</h3>
+      <div class="seg" id="ot-mode">
+        <div class="seg-btn on" data-mode="hours">按小时</div>
+        <div class="seg-btn" data-mode="range">按起止时间</div>
+      </div>
       <input id="ot-date" type="date">
-      <div class="row">
+      <!-- 按小时：直接填加班几个小时 -->
+      <div class="row" id="ot-hours-row">
+        <input id="ot-hours" type="number" min="0.5" max="24" step="0.5" placeholder="加班几个小时，如 2">
+      </div>
+      <!-- 按起止时间：自动计算时长 -->
+      <div class="row" id="ot-range-row" style="display:none">
         <input id="ot-start" type="time">
         <input id="ot-end" type="time">
       </div>
@@ -476,11 +514,14 @@ canvas.chart{width:100%;display:block}
   <section class="page" id="page-pwd">
     <h2>🔑 密码管理</h2>
     <div class="card">
-      <h3>新增账号</h3>
+      <h3 id="pw-form-title">新增账号</h3>
       <input id="pw-name" placeholder="名称，如：微博">
       <input id="pw-account" placeholder="账号">
       <input id="pw-pass" placeholder="密码">
-      <button class="btn" id="pw-add">保存</button>
+      <div class="row">
+        <button class="btn" id="pw-add">保存</button>
+        <button class="btn ghost" id="pw-cancel" style="display:none;flex:0 0 auto">取消编辑</button>
+      </div>
       <div class="muted mt">提示：数据仅保存在本机浏览器，请勿存储重要金融密码。</div>
     </div>
     <div class="card">
@@ -917,15 +958,37 @@ function renderCopies(){
  * ===================================================== */
 let ots=DB.get('ot',[]);
 const t2m=t=>{const[a,b]=t.split(':').map(Number);return a*60+b};
+let otMode=DB.get('otMode','hours'); /* 默认按小时录入，可选起止时间 */
 function initOt(){
   $('#ot-date').value=today();
+  /* 切换录入方式：按小时 / 按起止时间 */
+  const showMode=()=>{
+    $('#ot-hours-row').style.display=otMode==='hours'?'':'none';
+    $('#ot-range-row').style.display=otMode==='range'?'':'none';
+    $$('#ot-mode .seg-btn').forEach(b=>b.classList.toggle('on',b.dataset.mode===otMode));
+  };
+  $('#ot-mode').addEventListener('click',e=>{
+    const b=e.target.closest('.seg-btn');if(!b)return;
+    otMode=b.dataset.mode;DB.set('otMode',otMode);showMode();
+  });
+  showMode();
   $('#ot-add').onclick=()=>{
-    const date=$('#ot-date').value||today(),start=$('#ot-start').value,end=$('#ot-end').value;
-    if(!start||!end)return toast('请选择起止时间');
-    if(start===end)return toast('起止时间不能相同');
-    let mins=t2m(end)-t2m(start);
-    if(mins<0)mins+=24*60; /* 跨零点自动加24小时 */
-    ots.unshift({id:uid(),date,start,end,hours:Math.round(mins/60*10)/10});
+    const date=$('#ot-date').value||today();
+    if(otMode==='hours'){
+      /* 直接录几个小时，无需选时间 */
+      const h=parseFloat($('#ot-hours').value);
+      if(!h||h<=0)return toast('请输入加班小时数');
+      if(h>24)return toast('单次加班不要超过24小时哦');
+      ots.unshift({id:uid(),date,hours:Math.round(h*10)/10});
+      $('#ot-hours').value='';
+    }else{
+      const start=$('#ot-start').value,end=$('#ot-end').value;
+      if(!start||!end)return toast('请选择起止时间');
+      if(start===end)return toast('起止时间不能相同');
+      let mins=t2m(end)-t2m(start);
+      if(mins<0)mins+=24*60; /* 跨零点自动加24小时 */
+      ots.unshift({id:uid(),date,start,end,hours:Math.round(mins/60*10)/10});
+    }
     DB.set('ot',ots);renderOt();toast('已保存');
   };
   $('#ot-list').addEventListener('click',e=>{
@@ -946,10 +1009,11 @@ function renderOt(){
     `<div class="stat"><div class="stat-t">本周累计</div><div class="stat-v">${week.toFixed(1)} h</div></div>
      <div class="stat"><div class="stat-t">本月累计</div><div class="stat-v">${month.toFixed(1)} h</div></div>
      <div class="stat"><div class="stat-t">记录条数</div><div class="stat-v">${ots.length}</div></div>`;
-  const sorted=[...ots].sort((a,b)=>(b.date+b.start).localeCompare(a.date+a.start));
+  /* 排序：按日期 + 时间（直接录小时数的记录排在当天靠后） */
+  const sorted=[...ots].sort((a,b)=>(b.date+(b.start||'99:99')).localeCompare(a.date+(a.start||'99:99')));
   $('#ot-list').innerHTML=sorted.map(r=>`
     <div class="li"><div class="li-m"><div>${r.date}</div>
-    <div class="muted">${r.start} ~ ${r.end}</div></div>
+    <div class="muted">${r.start&&r.end?`${r.start} ~ ${r.end}`:'直接录入'}</div></div>
     <b>${r.hours} h</b><button class="btn small ghost" data-del="${r.id}">删</button></div>`).join('')
     ||'<div class="muted center">暂无记录</div>';
 }
@@ -1390,15 +1454,30 @@ function renderPeriod(){
  * ===================================================== */
 let pwds=DB.get('pwd',[]);
 const pwRevealed=new Set(); /* 已显示明文的项目（仅本次会话） */
+let pwEditId=null; /* 正在编辑的条目 id */
+/* 重置表单为“新增”状态 */
+function resetPwForm(){
+  pwEditId=null;
+  $('#pw-name').value='';$('#pw-account').value='';$('#pw-pass').value='';
+  $('#pw-form-title').textContent='新增账号';
+  $('#pw-add').textContent='保存';
+  $('#pw-cancel').style.display='none';
+}
 function initPwd(){
   $('#pw-add').onclick=()=>{
     const name=$('#pw-name').value.trim(),account=$('#pw-account').value.trim(),pass=$('#pw-pass').value;
     if(!name||!account||!pass)return toast('请填写完整信息');
-    pwds.unshift({id:uid(),name,account,pass});
-    DB.set('pwd',pwds);
-    $('#pw-name').value='';$('#pw-account').value='';$('#pw-pass').value='';
-    renderPwds();toast('已保存');
+    if(pwEditId){
+      /* 编辑已有条目 */
+      const it=pwds.find(x=>x.id===pwEditId);
+      if(it){it.name=name;it.account=account;it.pass=pass}
+      resetPwForm();
+    }else{
+      pwds.unshift({id:uid(),name,account,pass});
+    }
+    DB.set('pwd',pwds);renderPwds();toast('已保存');
   };
+  $('#pw-cancel').onclick=resetPwForm;
   $('#pw-search').addEventListener('input',renderPwds);
   $('#pw-list').addEventListener('click',e=>{
     const b=e.target.closest('[data-act]');if(!b)return;
@@ -1407,6 +1486,15 @@ function initPwd(){
     if(act==='cpa')copyText(it.account,'账号已复制');
     else if(act==='cpp')copyText(it.pass,'密码已复制');
     else if(act==='show'){pwRevealed.has(it.id)?pwRevealed.delete(it.id):pwRevealed.add(it.id);renderPwds()}
+    else if(act==='edit'){
+      /* 载入表单进行编辑 */
+      pwEditId=it.id;
+      $('#pw-name').value=it.name;$('#pw-account').value=it.account;$('#pw-pass').value=it.pass;
+      $('#pw-form-title').textContent='编辑账号';
+      $('#pw-add').textContent='更新';
+      $('#pw-cancel').style.display='';
+      window.scrollTo(0,0);
+    }
     else if(act==='del'){
       if(!confirm('删除「'+it.name+'」的账号信息？'))return;
       pwds=pwds.filter(x=>x.id!==it.id);DB.set('pwd',pwds);renderPwds();
@@ -1418,17 +1506,20 @@ function renderPwds(){
   const list=pwds.filter(p=>!kw||p.name.toLowerCase().includes(kw)||p.account.toLowerCase().includes(kw));
   $('#pw-list').innerHTML=list.map(p=>{
     const show=pwRevealed.has(p.id);
-    return`<div class="li" style="align-items:flex-start">
-      <div class="li-m">
-        <b>${esc(p.name)}</b>
-        <div class="muted pre">账号：${esc(p.account)}</div>
-        <div class="muted">密码：${show?esc(p.pass):'••••••••'}</div>
+    return`<div class="pwcard">
+      <div class="pw-main">
+        <div class="pw-name">${esc(p.name)}</div>
+        <div class="pw-line"><span class="lb">账号：</span>${esc(p.account)}</div>
+        <div class="pw-line"><span class="lb">密码：</span>${show?`<span class="pw-val">${esc(p.pass)}</span>`:'••••••••'}</div>
+        <div class="pw-cps">
+          <button class="btn small ghost" data-act="cpa" data-id="${p.id}">复制账号</button>
+          <button class="btn small ghost" data-act="cpp" data-id="${p.id}">复制密码</button>
+        </div>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:150px">
-        <button class="btn small" data-act="cpa" data-id="${p.id}">复制账号</button>
-        <button class="btn small" data-act="cpp" data-id="${p.id}">复制密码</button>
-        <button class="btn small ghost" data-act="show" data-id="${p.id}">${show?'隐藏':'显示'}</button>
-        <button class="btn small danger" data-act="del" data-id="${p.id}">删除</button>
+      <div class="pw-acts">
+        <div class="pw-ic" data-act="show" data-id="${p.id}" title="${show?'隐藏密码':'显示密码'}">${show?'🙈':'👁'}</div>
+        <div class="pw-ic" data-act="edit" data-id="${p.id}" title="编辑">✏️</div>
+        <div class="pw-ic danger" data-act="del" data-id="${p.id}" title="删除">🗑</div>
       </div>
     </div>`;
   }).join('')||'<div class="muted center">'+(kw?'没有匹配结果':'暂无保存的账号')+'</div>';
