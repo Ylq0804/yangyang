@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- maximum-scale=1：阻止 iOS 聚焦输入框时自动放大页面（用户仍可双指捏合缩放） -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#FFF6D9">
 <title>杨杨工作台</title>
 <style>
@@ -92,10 +93,19 @@ main{padding:66px 12px calc(24px + env(safe-area-inset-bottom));max-width:760px;
 }
 .card h3{font-size:15px;margin-bottom:4px}
 /* ========== 表单控件（触控友好，最小高度44px） ========== */
+/* 字号必须≥16px：iOS Safari 聚焦小于16px的输入框会自动放大页面且无法自动还原，
+   表现为"页面突然变大、右侧内容被切掉"，这是iPhone上布局"不适配"的常见真凶 */
 input,select,textarea{
-  width:100%;min-width:0;min-height:44px;padding:8px 10px;font-size:15px;font-family:inherit;
+  width:100%;min-width:0;min-height:44px;padding:8px 10px;font-size:16px;font-family:inherit;
   color:var(--text);background:var(--field);border:1px solid var(--line);border-radius:10px;
   outline:none;
+  /* iOS 日期/时间选择器外观规范化，避免固有宽度撑破容器 */
+  -webkit-appearance:none;appearance:none;
+}
+/* 恢复 iOS 下 select 的下拉箭头（appearance:none 会把它去掉） */
+select{
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23A2937A' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;
 }
 textarea{min-height:74px;resize:vertical}
 input:focus,select:focus,textarea:focus{border-color:var(--accent)}
@@ -292,7 +302,7 @@ canvas.chart{width:100%;display:block}
 <aside class="drawer" id="drawer">
   <div class="brand">🌼 杨杨工作台</div>
   <nav id="navList"></nav>
-  <div class="foot">数据仅保存在本机浏览器 localStorage，清除缓存会丢失数据。</div>
+  <div class="foot">数据仅保存在本机浏览器 localStorage，清除缓存会丢失数据。<br>版本 v2.3 · iPhone 适配版</div>
 </aside>
 
 <main>
