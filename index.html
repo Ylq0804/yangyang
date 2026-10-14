@@ -26,6 +26,8 @@ html[data-theme="dark"]{
   --shadow:0 8px 20px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+/* 禁用横向滚动：避免窄屏手机上任何元素把页面撑宽导致内容被切 */
+html,body{overflow-x:hidden;max-width:100%}
 body{
   font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
   background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;
@@ -91,7 +93,7 @@ main{padding:66px 12px calc(24px + env(safe-area-inset-bottom));max-width:760px;
 .card h3{font-size:15px;margin-bottom:4px}
 /* ========== 表单控件（触控友好，最小高度44px） ========== */
 input,select,textarea{
-  width:100%;min-height:44px;padding:8px 10px;font-size:15px;font-family:inherit;
+  width:100%;min-width:0;min-height:44px;padding:8px 10px;font-size:15px;font-family:inherit;
   color:var(--text);background:var(--field);border:1px solid var(--line);border-radius:10px;
   outline:none;
 }
@@ -99,7 +101,8 @@ textarea{min-height:74px;resize:vertical}
 input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .card>input,.card>select,.card>textarea,.card>.row,.card>.btn,.card>canvas,.card>.pal,.card>.stats-line{margin-top:8px}
 .row{display:flex;gap:8px;align-items:center}
-.row>*{flex:1;margin-top:0!important}
+/* min-width:0 让行内每个控件都能压缩，窄屏不会把卡片撑宽 */
+.row>*{flex:1;min-width:0;margin-top:0!important}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
   min-height:44px;padding:0 18px;border:none;border-radius:999px;cursor:pointer;
@@ -115,13 +118,15 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .center{text-align:center;padding:14px 0}
 .pre{white-space:pre-wrap;word-break:break-word}
 /* ========== 统计卡片 ========== */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .stat{
+  min-width:0;
   background:var(--card);border:1px solid var(--line);border-radius:var(--r);
   box-shadow:var(--shadow);padding:12px 6px;text-align:center;
 }
 .stat-t{font-size:12px;color:var(--sub)}
-.stat-v{font-size:17px;font-weight:800;margin-top:4px}
+/* 数值过长时允许换行，避免被卡片裁掉 */
+.stat-v{font-size:17px;font-weight:800;margin-top:4px;overflow-wrap:anywhere}
 /* ========== 列表 ========== */
 .li{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px dashed var(--line)}
 .li:last-child{border-bottom:none}
@@ -172,8 +177,9 @@ canvas.chart{width:100%;display:block}
   border-radius:999px;padding:4px;margin-top:8px;
 }
 .seg-btn{
-  flex:1;text-align:center;padding:8px 0;border-radius:999px;font-size:14px;
+  flex:1 1 0;min-width:0;text-align:center;padding:8px 4px;border-radius:999px;font-size:14px;
   cursor:pointer;user-select:none;color:var(--sub);transition:background .15s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .seg-btn.on{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#3B3225;font-weight:700}
 /* ========== 密码管理卡片 ========== */
@@ -246,6 +252,28 @@ canvas.chart{width:100%;display:block}
   opacity:0;transition:.25s;z-index:99;pointer-events:none;max-width:86vw;text-align:center;
 }
 #toast.show{opacity:.95;transform:translateX(-50%)}
+/* ========== 窄屏适配：小屏手机 / 系统大字体场景 ========== */
+@media(max-width:420px){
+  main{padding-left:10px;padding-right:10px}
+  .card{padding:12px;border-radius:16px}
+  .btn{padding:0 14px}
+  .seg-btn{font-size:13px}
+  .stat{padding:10px 4px}
+  .stat-t{font-size:11px}
+  .stat-v{font-size:15px}
+  .li{gap:8px}
+}
+/* 超窄屏（≤340px）：统计卡与时间输入改为可以压缩／换行 */
+@media(max-width:340px){
+  .stats{gap:6px}
+  .stat{padding:8px 2px}
+  .stat-t{font-size:10px}
+  .stat-v{font-size:14px}
+  /* 起止时间在超窄屏改为上下堆叠，避免两个时间框被压得过窄 */
+  #ot-range-row{flex-wrap:wrap}
+  #ot-range-row>*{flex:1 1 100%}
+  .pw-ic{width:34px;height:34px;font-size:15px}
+}
 </style>
 </head>
 <body>
