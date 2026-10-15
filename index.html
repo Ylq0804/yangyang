@@ -302,7 +302,7 @@ canvas.chart{width:100%;display:block}
 <aside class="drawer" id="drawer">
   <div class="brand">🌼 杨杨工作台</div>
   <nav id="navList"></nav>
-  <div class="foot">数据仅保存在本机浏览器 localStorage，清除缓存会丢失数据。<br>版本 v2.3 · iPhone 适配版</div>
+  <div class="foot">数据仅保存在本机浏览器 localStorage，清除缓存会丢失数据。<br>版本 v2.5 · 账本仅支出版</div>
 </aside>
 
 <main>
@@ -330,28 +330,35 @@ canvas.chart{width:100%;display:block}
       </div>
       <div class="muted mt">打卡每天 0 点自动重置，连续 / 累计天数会持续累积保存在本地。</div>
     </div>
+    <!-- 数据备份：防止清缓存/删图标/换设备导致数据丢失 -->
+    <div class="card">
+      <h3>💾 数据备份</h3>
+      <div class="row">
+        <button class="btn small" id="bk-export" style="flex:0 0 auto">导出备份</button>
+        <button class="btn small ghost" id="bk-import" style="flex:0 0 auto">导入恢复</button>
+        <input id="bk-file" type="file" accept=".json,application/json" style="display:none">
+      </div>
+      <div class="muted mt">数据只存在本机浏览器：清缓存、删除主屏图标、换设备都会丢失且无法找回。建议定期点「导出备份」存到手机"文件"App 或云盘，需要时「导入恢复」。</div>
+    </div>
   </section>
 
   <!-- ========== 1. 账本 ========== -->
   <section class="page" id="page-ledger">
     <h2>📒 账本</h2>
     <div class="card">
-      <h3>记一笔</h3>
-      <div class="row">
-        <select id="lg-type"><option value="out">支出</option><option value="in">收入</option></select>
-        <input id="lg-amount" type="number" min="0" step="0.01" placeholder="金额">
-      </div>
+      <h3>记一笔支出</h3>
+      <input id="lg-amount" type="number" min="0" step="0.01" placeholder="金额（元）">
       <div class="row">
         <select id="lg-cat">
           <option>餐饮</option><option>交通</option><option>购物</option>
-          <option>房租</option><option>工资</option><option>其他</option>
+          <option>房租</option><option>其他</option>
         </select>
         <input id="lg-date" type="date">
       </div>
       <input id="lg-note" placeholder="备注（可选）">
       <button class="btn" id="lg-add">保存</button>
     </div>
-    <div class="stats" id="lg-stats"></div>
+    <div class="stats" id="lg-stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div>
     <div class="card">
       <h3>本月支出分类</h3>
       <canvas class="chart" id="lg-pie"></canvas>
@@ -739,6 +746,37 @@ function refreshDaily(){
 }
 function initHome(){
   startClock();refreshDaily();
+  /* ===== 数据备份与恢复 ===== */
+  /* 导出：把本应用在 localStorage 里的全部数据打包成一个 JSON 文件下载 */
+  $('#bk-export').onclick=()=>{
+    const data={};
+    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);data[k]=localStorage.getItem(k)}
+    const blob=new Blob([JSON.stringify({app:'yangyang-workbench',time:new Date().toISOString(),data})],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='杨杨工作台备份-'+today()+'.json';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+    toast('备份文件已导出，请保存到"文件"或云盘');
+  };
+  /* 导入：选择备份文件，确认覆盖后写回 localStorage 并刷新页面 */
+  $('#bk-import').onclick=()=>$('#bk-file').click();
+  $('#bk-file').addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      try{
+        const obj=JSON.parse(rd.result);
+        const data=obj&&obj.data&&obj.app==='yangyang-workbench'?obj.data:obj; /* 兼容包装格式与纯键值格式 */
+        if(!confirm('导入将覆盖当前全部数据，确定继续？'))return;
+        Object.keys(data).forEach(k=>localStorage.setItem(k,data[k]));
+        toast('导入成功，正在刷新');
+        setTimeout(()=>location.reload(),800);
+      }catch(err){toast('备份文件格式不正确')}
+    };
+    rd.readAsText(f);
+    e.target.value='';
+  });
   $('#ck-add').onclick=()=>{
     const name=$('#ck-name').value.trim();
     if(!name)return toast('请输入打卡项目名称');
@@ -782,14 +820,24 @@ function renderCheckin(){
  * ===================================================== */
 const CATS=['餐饮','交通','购物','房租','工资','其他'];
 const CAT_COLOR={'餐饮':'#FF6B6B','交通':'#4ECDC4','购物':'#FFD93D','房租':'#6C5CE7','工资':'#2ECC71','其他':'#95A5A6'};
+/* 返回本周区间 [周一, 周日]，日期格式 YYYY-MM-DD（中国习惯周一为一周起点） */
+function weekRange(){
+  const d=new Date();
+  const day=(d.getDay()+6)%7; /* getDay：周日0 → 转成 周一0 ... 周日6 */
+  const mon=new Date(d);mon.setDate(d.getDate()-day);
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  const fmt=x=>`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
+  return [fmt(mon),fmt(sun)];
+}
 let ledger=DB.get('ledger',[]);
 function initLedger(){
   $('#lg-date').value=today();
   $('#lg-add').onclick=()=>{
-    const type=$('#lg-type').value,amount=parseFloat($('#lg-amount').value);
+    const amount=parseFloat($('#lg-amount').value);
     const cat=$('#lg-cat').value,date=$('#lg-date').value||today(),note=$('#lg-note').value.trim();
     if(!amount||amount<=0)return toast('请输入正确金额');
-    ledger.unshift({id:uid(),type,amount:Math.round(amount*100)/100,cat,date,note});
+    /* 只记录支出，type 固定为 out（保留字段以便兼容旧数据） */
+    ledger.unshift({id:uid(),type:'out',amount:Math.round(amount*100)/100,cat,date,note});
     DB.set('ledger',ledger);
     $('#lg-amount').value='';$('#lg-note').value='';
     renderLedger();toast('已保存');
@@ -802,25 +850,28 @@ function initLedger(){
 }
 function renderLedger(){
   const ym=today().slice(0,7);
-  let inc=0,out=0;const byCat={};
-  ledger.filter(r=>r.date.startsWith(ym)).forEach(r=>{
-    if(r.type==='in')inc+=r.amount;else{out+=r.amount;byCat[r.cat]=(byCat[r.cat]||0)+r.amount}
+  const[wStart,wEnd]=weekRange();
+  let out=0,weekOut=0;const byCat={};
+  /* 本月支出统计；历史收入数据保留在本地但不在账本中展示 */
+  ledger.filter(r=>r.type!=='in'&&r.date.startsWith(ym)).forEach(r=>{
+    out+=r.amount;byCat[r.cat]=(byCat[r.cat]||0)+r.amount;
   });
+  /* 本周支出单独按周一~周日区间统计，跨月记录也计入 */
+  ledger.filter(r=>r.type!=='in'&&r.date>=wStart&&r.date<=wEnd).forEach(r=>weekOut+=r.amount);
   $('#lg-stats').innerHTML=
-    `<div class="stat"><div class="stat-t">本月收入</div><div class="stat-v" style="color:#2ECC71">${inc.toFixed(2)}</div></div>
-     <div class="stat"><div class="stat-t">本月支出</div><div class="stat-v" style="color:#FF6B6B">${out.toFixed(2)}</div></div>
-     <div class="stat"><div class="stat-t">本月结余</div><div class="stat-v">${(inc-out).toFixed(2)}</div></div>`;
+    `<div class="stat"><div class="stat-t">本周支出</div><div class="stat-v" style="color:#FF6B6B">${weekOut.toFixed(2)}</div></div>
+     <div class="stat"><div class="stat-t">本月支出</div><div class="stat-v" style="color:#FF6B6B">${out.toFixed(2)}</div></div>`;
   drawPie(byCat,out);
   $('#lg-legend').innerHTML=Object.keys(byCat).length
     ?Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>
       `<div class="legend-row"><i class="legend-dot" style="background:${CAT_COLOR[c]}"></i>${c}<span class="muted" style="margin-left:auto">${v.toFixed(2)}（${out?Math.round(v/out*100):0}%）</span></div>`).join('')
     :'';
-  const sorted=[...ledger].sort((a,b)=>b.date.localeCompare(a.date));
+  const sorted=ledger.filter(r=>r.type!=='in').sort((a,b)=>b.date.localeCompare(a.date));
   $('#lg-list').innerHTML=sorted.slice(0,50).map(r=>`
     <div class="li">
       <span class="chip" style="background:${CAT_COLOR[r.cat]}22;color:${CAT_COLOR[r.cat]}">${r.cat}</span>
       <div class="li-m"><div class="pre">${esc(r.note)||r.cat}</div><div class="muted">${r.date}</div></div>
-      <b style="color:${r.type==='in'?'#2ECC71':'#FF6B6B'}">${r.type==='in'?'+':'-'}${r.amount.toFixed(2)}</b>
+      <b style="color:#FF6B6B">-${r.amount.toFixed(2)}</b>
       <button class="btn small ghost" data-del="${r.id}">删</button>
     </div>`).join('')||'<div class="muted center">暂无记录</div>';
 }
