@@ -222,6 +222,14 @@ canvas.chart{width:100%;display:block}
 .sub input[type=checkbox]{width:20px;height:20px;min-height:20px;flex:0 0 auto;accent-color:var(--ok)}
 .sub .t{flex:1;min-width:0}
 .done{text-decoration:line-through;color:var(--sub)}
+/* 旅游模块 */
+.tr-head:active{opacity:.7}
+.tr-badge{font-size:12px;padding:2px 8px;border-radius:10px;font-weight:600;flex:0 0 auto}
+.tr-badge.plan{background:var(--accent2);color:#9C4A5E}
+.tr-badge.done{background:var(--accent3);color:#2C7A56}
+.tr-sec{font-size:14px;font-weight:700;margin-top:14px;margin-bottom:6px;padding-left:6px;border-left:3px solid var(--accent)}
+.tr-day{background:var(--bg);border-radius:12px;padding:8px 10px;margin-top:8px}
+.tr-detail textarea{width:100%;min-height:60px;margin-top:6px}
 /* ========== 弹层（手机底部弹出，桌面居中） ========== */
 #modalMask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60;display:none}
 #modal{
@@ -302,7 +310,7 @@ canvas.chart{width:100%;display:block}
 <aside class="drawer" id="drawer">
   <div class="brand">🌼 杨杨工作台</div>
   <nav id="navList"></nav>
-  <div class="foot">数据仅保存在本机浏览器 localStorage，清除缓存会丢失数据。<br>版本 v2.5 · 账本仅支出版</div>
+  <div class="foot">数据仅保存在本机浏览器 localStorage，清除缓存会丢失数据。<br>版本 v2.6 · 旅游模块上线</div>
 </aside>
 
 <main>
@@ -500,25 +508,34 @@ canvas.chart{width:100%;display:block}
     </div>
   </section>
 
-  <!-- ========== 8. 目标清单 ========== -->
-  <section class="page" id="page-goal">
-    <h2>🎯 目标清单</h2>
+  <!-- ========== 8. 旅游 ========== -->
+  <section class="page" id="page-travel">
+    <h2>✈️ 旅游</h2>
+    <div class="stats" id="tr-stats"></div>
     <div class="card">
-      <h3 id="gl-form-title">新建目标</h3>
-      <input id="gl-title" placeholder="目标内容">
-      <input id="gl-deadline" type="date">
+      <h3 id="tr-form-title">新建旅行</h3>
+      <input id="tr-dest" placeholder="目的地，如：成都">
       <div class="row">
-        <button class="btn" id="gl-add">保存目标</button>
-        <button class="btn ghost" id="gl-cancel" style="display:none;flex:0 0 auto">取消编辑</button>
+        <input id="tr-start" type="date">
+        <input id="tr-end" type="date">
+      </div>
+      <div class="row">
+        <select id="tr-status">
+          <option value="plan">计划中</option>
+          <option value="done">已完成</option>
+        </select>
+        <button class="btn" id="tr-save" style="flex:0 0 auto">保存</button>
+        <button class="btn ghost" id="tr-cancel" style="display:none;flex:0 0 auto">取消</button>
       </div>
     </div>
-    <div id="gl-list"></div>
+    <div id="tr-list"></div>
     <div class="card">
-      <div class="row" style="margin-top:0;cursor:pointer" id="gl-arch-toggle">
-        <h3 style="flex:1;margin:0">已归档</h3>
-        <span id="gl-arch-arrow">▼</span>
+      <h3>🌟 旅行心愿单</h3>
+      <div class="row">
+        <input id="tr-wish" placeholder="想去的目的地">
+        <button class="btn" id="tr-wish-add" style="flex:0 0 auto">添加</button>
       </div>
-      <div id="gl-arch-list" class="mt" style="display:none"></div>
+      <div id="tr-wish-list" class="mt"></div>
     </div>
   </section>
 
@@ -646,7 +663,7 @@ $('#btnTheme').onclick=()=>{
 const PAGES=[
   ['home','🏠','首页'],
   ['ledger','📒','账本'],['weight','⚖️','体重'],['copy','📝','文案'],['ot','⏰','加班时长'],
-  ['pixel','🎨','拼豆图纸'],['mood','😊','心情日记'],['cal','📅','日历待办'],['goal','🎯','目标清单'],
+  ['pixel','🎨','拼豆图纸'],['mood','😊','心情日记'],['cal','📅','日历待办'],['travel','✈️','旅游'],
   ['period','🌸','经期记录'],['pwd','🔑','密码管理']
 ];
 let currentPage='home';
@@ -1354,106 +1371,211 @@ function renderCal(){
 }
 
 /* =====================================================
- * 8. 目标清单
+ * 8. 旅游
  * ===================================================== */
-let goals=DB.get('goal',[]),goalEditId=null,archOpen=false;
-function initGoal(){
-  $('#gl-add').onclick=()=>{
-    const title=$('#gl-title').value.trim(),deadline=$('#gl-deadline').value;
-    if(!title)return toast('请输入目标内容');
-    if(goalEditId){
-      const g=goals.find(x=>x.id===goalEditId);
-      if(g){g.title=title;g.deadline=deadline}
-      resetGoalForm();
-    }else goals.unshift({id:uid(),title,deadline,subs:[],archived:false,created:today()});
-    DB.set('goal',goals);renderGoals();toast('已保存');
+let trips=DB.get('trips',[]),trEditId=null,trOpenId=null;
+let wishlist=DB.get('travel_wish',[]);
+const EXP_CATS=['交通','住宿','餐饮','门票','购物','其他'];
+function initTravel(){
+  $('#tr-save').onclick=()=>{
+    const dest=$('#tr-dest').value.trim(),startDate=$('#tr-start').value,endDate=$('#tr-end').value,status=$('#tr-status').value;
+    if(!dest)return toast('请输入目的地');
+    let t;
+    if(trEditId){
+      t=trips.find(x=>x.id===trEditId);
+      if(t){t.dest=dest;t.startDate=startDate;t.endDate=endDate;t.status=status}
+    }else{
+      t={id:uid(),dest,startDate,endDate,status,itinerary:[],expenses:[],packing:[],notes:''};
+      trips.unshift(t);
+    }
+    syncItinerary(t);
+    DB.set('trips',trips);resetTrForm();renderTravel();toast('已保存');
   };
-  $('#gl-cancel').onclick=resetGoalForm;
-  $('#gl-arch-toggle').onclick=()=>{
-    archOpen=!archOpen;
-    $('#gl-arch-list').style.display=archOpen?'':'none';
-    $('#gl-arch-arrow').textContent=archOpen?'▲':'▼';
+  $('#tr-cancel').onclick=resetTrForm;
+  $('#tr-wish-add').onclick=()=>{
+    const v=$('#tr-wish').value.trim();if(!v)return toast('请输入目的地');
+    wishlist.unshift({id:uid(),dest:v,status:'wish'});
+    DB.set('travel_wish',wishlist);$('#tr-wish').value='';renderTravel();
   };
-  const wrap=$('#page-goal');
+  $('#tr-wish').addEventListener('keydown',e=>{if(e.key==='Enter')$('#tr-wish-add').click()});
+  const wrap=$('#page-travel');
   wrap.addEventListener('click',e=>{
     const b=e.target.closest('[data-act]');if(!b)return;
-    const g=goals.find(x=>x.id===b.dataset.gid);if(!g)return;
     const act=b.dataset.act;
+    const t=b.dataset.tid?trips.find(x=>x.id===b.dataset.tid):null;
+    if(act==='toggle'){if(t){trOpenId=trOpenId===t.id?null:t.id;renderTravel()}return}
+    if(act==='wishDone'){
+      const w=wishlist.find(x=>x.id===b.dataset.wid);if(w){w.status=w.status==='done'?'wish':'done';DB.set('travel_wish',wishlist);renderTravel()}
+      return;
+    }
+    if(act==='delWish'){
+      wishlist=wishlist.filter(w=>w.id!==b.dataset.wid);DB.set('travel_wish',wishlist);renderTravel();return;
+    }
+    if(!t)return;
     if(act==='edit'){
-      goalEditId=g.id;$('#gl-title').value=g.title;$('#gl-deadline').value=g.deadline||'';
-      $('#gl-form-title').textContent='编辑目标';$('#gl-add').textContent='更新目标';
-      $('#gl-cancel').style.display='';window.scrollTo(0,0);
+      trEditId=t.id;$('#tr-dest').value=t.dest;$('#tr-start').value=t.startDate||'';
+      $('#tr-end').value=t.endDate||'';$('#tr-status').value=t.status;
+      $('#tr-form-title').textContent='编辑旅行';$('#tr-save').textContent='更新';
+      $('#tr-cancel').style.display='';window.scrollTo(0,0);
     }
-    else if(act==='arch'){g.archived=true;DB.set('goal',goals);renderGoals();toast('已归档')}
-    else if(act==='unarch'){g.archived=false;DB.set('goal',goals);renderGoals()}
     else if(act==='del'){
-      if(!confirm('删除目标「'+g.title+'」？'))return;
-      goals=goals.filter(x=>x.id!==g.id);DB.set('goal',goals);renderGoals();
+      if(!confirm('删除旅行「'+t.dest+'」？'))return;
+      trips=trips.filter(x=>x.id!==t.id);if(trOpenId===t.id)trOpenId=null;
+      DB.set('trips',trips);renderTravel();
     }
-    else if(act==='addsub'){
-      const inp=wrap.querySelector(`[data-subinput="${g.id}"]`),text=inp.value.trim();
-      if(!text)return toast('请输入子任务');
-      g.subs.push({id:uid(),text,done:false});
-      DB.set('goal',goals);renderGoals();
+    else if(act==='addDay'){
+      const dt=wrap.querySelector(`[data-day-date="${t.id}"]`).value||today();
+      t.itinerary.push({id:uid(),date:dt,note:'',places:[]});
+      DB.set('trips',trips);renderTravel();
     }
-    else if(act==='delsub'){
-      g.subs=g.subs.filter(s=>s.id!==b.dataset.sid);DB.set('goal',goals);renderGoals();
+    else if(act==='delDay'){
+      t.itinerary=t.itinerary.filter(d=>d.id!==b.dataset.did);DB.set('trips',trips);renderTravel();
+    }
+    else if(act==='addPlace'){
+      const inp=wrap.querySelector(`[data-place-input="${b.dataset.did}"]`),text=inp.value.trim();
+      if(!text)return toast('请输入地点');
+      const d=t.itinerary.find(x=>x.id===b.dataset.did);
+      if(d){d.places.push({id:uid(),text,done:false});DB.set('trips',trips);renderTravel()}
+    }
+    else if(act==='delPlace'){
+      const d=t.itinerary.find(x=>x.id===b.dataset.did);
+      if(d){d.places=d.places.filter(p=>p.id!==b.dataset.pid);DB.set('trips',trips);renderTravel()}
+    }
+    else if(act==='addExp'){
+      const cat=wrap.querySelector(`[data-exp-cat="${t.id}"]`).value;
+      const amt=wrap.querySelector(`[data-exp-amt="${t.id}"]`).value;
+      const note=wrap.querySelector(`[data-exp-note="${t.id}"]`).value.trim();
+      if(!amt||isNaN(Number(amt)))return toast('请输入金额');
+      t.expenses.push({id:uid(),cat,amount:Number(amt),note});
+      DB.set('trips',trips);renderTravel();
+    }
+    else if(act==='delExp'){
+      t.expenses=t.expenses.filter(e=>e.id!==b.dataset.eid);DB.set('trips',trips);renderTravel();
+    }
+    else if(act==='addPack'){
+      const inp=wrap.querySelector(`[data-pack-input="${t.id}"]`),text=inp.value.trim();
+      if(!text)return toast('请输入物品');
+      t.packing.push({id:uid(),text,done:false});DB.set('trips',trips);renderTravel();
+    }
+    else if(act==='delPack'){
+      t.packing=t.packing.filter(p=>p.id!==b.dataset.pid);DB.set('trips',trips);renderTravel();
     }
   });
   wrap.addEventListener('change',e=>{
-    const c=e.target.closest('[data-act="tglsub"]');if(!c)return;
-    const g=goals.find(x=>x.id===c.dataset.gid);if(!g)return;
-    const s=g.subs.find(x=>x.id===c.dataset.sid);if(!s)return;
-    s.done=c.checked;DB.set('goal',goals);renderGoals();
-  });
-  wrap.addEventListener('keydown',e=>{
-    if(e.key==='Enter'&&e.target.dataset.subinput){
-      const g=e.target.dataset.subinput;
-      wrap.querySelector(`[data-act="addsub"][data-gid="${g}"]`).click();
+    const c=e.target,act=c.dataset.act;
+    if(act==='tglPlace'){
+      const t=trips.find(x=>x.id===c.dataset.tid);if(!t)return;
+      const d=t.itinerary.find(x=>x.id===c.dataset.did);if(!d)return;
+      const p=d.places.find(x=>x.id===c.dataset.pid);if(p){p.done=c.checked;DB.set('trips',trips);renderTravel()}
+    }
+    else if(act==='tglPack'){
+      const t=trips.find(x=>x.id===c.dataset.tid);if(!t)return;
+      const p=t.packing.find(x=>x.id===c.dataset.pid);if(p){p.done=c.checked;DB.set('trips',trips);renderTravel()}
+    }
+    else if(act==='dayNote'){
+      const t=trips.find(x=>x.id===c.dataset.tid);if(!t)return;
+      const d=t.itinerary.find(x=>x.id===c.dataset.did);if(d){d.note=c.value;DB.set('trips',trips)}
+    }
+    else if(act==='notes'){
+      const t=trips.find(x=>x.id===c.dataset.tid);if(t){t.notes=c.value;DB.set('trips',trips)}
     }
   });
 }
-function resetGoalForm(){
-  goalEditId=null;$('#gl-title').value='';$('#gl-deadline').value='';
-  $('#gl-form-title').textContent='新建目标';$('#gl-add').textContent='保存目标';
-  $('#gl-cancel').style.display='none';
+function resetTrForm(){
+  trEditId=null;$('#tr-dest').value='';$('#tr-start').value='';$('#tr-end').value='';
+  $('#tr-status').value='plan';$('#tr-form-title').textContent='新建旅行';$('#tr-save').textContent='保存';
+  $('#tr-cancel').style.display='none';
 }
-function goalCard(g,archived){
-  const total=g.subs.length,done=g.subs.filter(s=>s.done).length;
-  const pct=total?Math.round(done/total*100):0;
-  const overdue=g.deadline&&g.deadline<today()&&pct<100;
-  return`<div class="card">
-    <div class="row" style="margin-top:0">
-      <b style="flex:1" class="pre">${esc(g.title)}</b>
-      <span class="muted" style="color:${overdue?'var(--danger)':''}">${g.deadline?'截止 '+g.deadline:'无截止'}${overdue?'（已过期）':''}</span>
-    </div>
-    <div class="bar"><i style="width:${pct}%"></i></div>
-    <div class="muted mt">${pct}% · 子任务 ${done}/${total}</div>
-    <div class="mt">${g.subs.map(s=>`
-      <div class="sub">
-        <input type="checkbox" data-act="tglsub" data-gid="${g.id}" data-sid="${s.id}" ${s.done?'checked':''}>
-        <span class="t ${s.done?'done':''}">${esc(s.text)}</span>
-        <button class="btn small ghost" data-act="delsub" data-gid="${g.id}" data-sid="${s.id}">删</button>
-      </div>`).join('')}</div>
-    ${archived?'':`<div class="row">
-      <input placeholder="添加子任务，回车快速添加" data-subinput="${g.id}">
-      <button class="btn small" data-act="addsub" data-gid="${g.id}" style="flex:0 0 auto">添加</button>
-    </div>`}
+/* 根据出行/返程日期区间自动生成每日行程，已存在日期的地点与笔记保留 */
+function syncItinerary(t){
+  if(!t.startDate||!t.endDate){t.itinerary=[];return}
+  const start=parseD(t.startDate),end=parseD(t.endDate);
+  if(end<start){t.itinerary=[];return}
+  const days=Math.round((end-start)/86400000)+1;
+  const byDate={};t.itinerary.forEach(d=>{byDate[d.date]=d});
+  const next=[];
+  for(let i=0;i<days;i++){
+    const ds=addDays(t.startDate,i);
+    next.push(byDate[ds]||{id:uid(),date:ds,note:'',places:[]});
+  }
+  t.itinerary=next;
+}
+function tripDetail(t){
+  return `<div class="tr-detail">
+    <div class="tr-sec">📍 每日行程（共 ${t.itinerary.length} 天）</div>
+    ${t.itinerary.length?t.itinerary.map((d,i)=>{
+      const done=d.places.filter(p=>p.done).length;
+      return `<div class="tr-day">
+        <div class="row" style="margin-top:0">
+          <b style="flex:1">Day${i+1} <span class="muted" style="font-weight:400">${d.date?d.date+' · ':''}${done}/${d.places.length}</span></b>
+        </div>
+        <div>${d.places.map(p=>`<div class="sub">
+          <input type="checkbox" data-act="tglPlace" data-tid="${t.id}" data-did="${d.id}" data-pid="${p.id}" ${p.done?'checked':''}>
+          <span class="t ${p.done?'done':''}">${esc(p.text)}</span>
+          <button class="btn small ghost" data-act="delPlace" data-tid="${t.id}" data-did="${d.id}" data-pid="${p.id}">删</button>
+        </div>`).join('')||'<div class="muted">暂无地点</div>'}</div>
+        <div class="row mt">
+          <input placeholder="添加游玩地点" data-place-input="${d.id}">
+          <button class="btn small" data-act="addPlace" data-tid="${t.id}" data-did="${d.id}" style="flex:0 0 auto">添加</button>
+        </div>
+        <textarea placeholder="当日旅途感受、美食、注意事项..." data-act="dayNote" data-tid="${t.id}" data-did="${d.id}">${esc(d.note)}</textarea>
+      </div>`;
+    }).join(''):'<div class="muted mt">请编辑旅行，设置出行与返程日期，系统会自动生成每日行程</div>'}
+
+    <div class="tr-sec">💰 花费（合计 ¥${t.expenses.reduce((s,e)=>s+Number(e.amount||0),0).toFixed(2)}）</div>
     <div class="row">
-      ${archived
-        ?`<button class="btn small ghost" data-act="unarch" data-gid="${g.id}">恢复</button>`
-        :`<button class="btn small ghost" data-act="edit" data-gid="${g.id}">编辑</button>
-           <button class="btn small ghost" data-act="arch" data-gid="${g.id}">归档</button>`}
-      <button class="btn small danger" data-act="del" data-gid="${g.id}">删除</button>
+      <select data-exp-cat="${t.id}">${EXP_CATS.map(c=>`<option>${c}</option>`).join('')}</select>
+      <input type="number" step="0.01" placeholder="金额" data-exp-amt="${t.id}">
+      <input placeholder="备注" data-exp-note="${t.id}">
+      <button class="btn small" data-act="addExp" data-tid="${t.id}" style="flex:0 0 auto">记</button>
     </div>
+    <div class="mt">${t.expenses.map(e=>`<div class="sub">
+      <span class="t" style="flex:1"><b>${esc(e.cat)}</b> ${esc(e.note)} <span class="muted">¥${Number(e.amount).toFixed(2)}</span></span>
+      <button class="btn small ghost" data-act="delExp" data-tid="${t.id}" data-eid="${e.id}">删</button>
+    </div>`).join('')||'<div class="muted">暂无花费</div>'}</div>
+
+    <div class="tr-sec">🧳 行李清单</div>
+    <div class="row">
+      <input placeholder="添加物品" data-pack-input="${t.id}">
+      <button class="btn small" data-act="addPack" data-tid="${t.id}" style="flex:0 0 auto">添加</button>
+    </div>
+    <div class="mt">${t.packing.map(p=>`<div class="sub">
+      <input type="checkbox" data-act="tglPack" data-tid="${t.id}" data-pid="${p.id}" ${p.done?'checked':''}>
+      <span class="t ${p.done?'done':''}">${esc(p.text)}</span>
+      <button class="btn small ghost" data-act="delPack" data-tid="${t.id}" data-pid="${p.id}">删</button>
+    </div>`).join('')||'<div class="muted">暂无物品</div>'}</div>
   </div>`;
 }
-function renderGoals(){
-  const act=goals.filter(g=>!g.archived),arch=goals.filter(g=>g.archived);
-  $('#gl-list').innerHTML=act.map(g=>goalCard(g,false)).join('')
-    ||'<div class="card muted center">暂无目标，立一个吧</div>';
-  $('#gl-arch-list').innerHTML=arch.map(g=>goalCard(g,true)).join('')
-    ||'<div class="muted center">暂无归档目标</div>';
+function tripCard(t){
+  const open=trOpenId===t.id;
+  const total=t.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+  return `<div class="card">
+    <div class="row tr-head" data-act="toggle" data-tid="${t.id}" style="cursor:pointer;margin-top:0">
+      <b style="flex:1" class="pre">${esc(t.dest)}</b>
+      <span class="tr-badge ${t.status}">${t.status==='done'?'已完成':'计划中'}</span>
+      <span class="muted">${open?'▲':'▼'}</span>
+    </div>
+    <div class="muted">${t.startDate||'?'} ~ ${t.endDate||'?'} · 花费 ¥${total.toFixed(2)}</div>
+    <div class="row">
+      <button class="btn small ghost" data-act="edit" data-tid="${t.id}">编辑</button>
+      <button class="btn small danger" data-act="del" data-tid="${t.id}">删除</button>
+    </div>
+    ${open?tripDetail(t):''}
+  </div>`;
+}
+function renderTravel(){
+  const totalExp=trips.reduce((s,t)=>s+t.expenses.reduce((a,e)=>a+Number(e.amount||0),0),0);
+  const doneTrips=trips.filter(t=>t.status==='done');
+  const cities=new Set(doneTrips.map(t=>t.dest)).size;
+  $('#tr-stats').innerHTML=`<div class="stat"><div class="stat-t">去过城市</div><div class="stat-v">${cities}</div></div>
+    <div class="stat"><div class="stat-t">旅行次数</div><div class="stat-v">${trips.length}</div></div>
+    <div class="stat"><div class="stat-t">累计花费</div><div class="stat-v">¥${totalExp.toFixed(2)}</div></div>`;
+  $('#tr-list').innerHTML=trips.map(tripCard).join('')||'<div class="card muted center">还没有旅行记录，开始规划吧</div>';
+  $('#tr-wish-list').innerHTML=wishlist.map(w=>`<div class="sub">
+    <input type="checkbox" data-act="wishDone" data-wid="${w.id}" ${w.status==='done'?'checked':''}>
+    <span class="t ${w.status==='done'?'done':''}">${esc(w.dest)}</span>
+    <button class="btn small ghost" data-act="delWish" data-wid="${w.id}">删</button>
+  </div>`).join('')||'<div class="muted mt">心愿单空空如也</div>';
 }
 
 /* =====================================================
@@ -1621,13 +1743,13 @@ const RENDERS={
   home:renderCheckin,
   ledger:renderLedger,weight:renderWeight,copy:renderCopies,ot:renderOt,
   pixel:renderPixel,mood:renderMoods,cal:renderCal,
-  goal:renderGoals,period:renderPeriod,pwd:renderPwds
+  travel:renderTravel,period:renderPeriod,pwd:renderPwds
 };
 window.addEventListener('DOMContentLoaded',()=>{
   initTheme();buildNav();
   initHome();
   initLedger();initWeight();initCopy();initOt();initPixel();
-  initMood();initCal();initGoal();initPeriod();initPwd();
+  initMood();initCal();initTravel();initPeriod();initPwd();
   go('home'); /* 默认打开首页 */
 });
 /* 窗口尺寸变化时重绘当前页图表/画布 */
